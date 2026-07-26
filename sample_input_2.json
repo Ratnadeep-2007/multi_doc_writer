@@ -1,0 +1,29 @@
+{
+  "consumer_name": "ASHISH JAYVANT RANE",
+  "consumer_number": "023121009641",
+  "mobile_number": "9876543210",
+  "email": "ashish.rane@example.com",
+  "install_address": "PLOT NO. 15, SECTOR 4, TAL. ALIBAG CIRCLE, RAIGAD",
+  "consumer_residential_address": "At Post Varsoli, Tal. Alibag",
+  "consumer_residential_address_suffix": "TAL. ALIBAG, DIST. RAIGAD",
+
+  "sanctioned_capacity_kw": "4.4",
+  "rooftop_capacity_kw": "4",
+  "module_make": "Adani Solar",
+  "inverter_capacity_kw": "4.4",
+  "inverter_make": "Growatt New Energy",
+  "pv_module_count": "8",
+  "module_capacity_kw": "4.4",
+
+  "installation_date": "12-July-2026",
+  "agreement_date": "18/07/2026",
+  "execution_date_text": "18th of July 2026",
+
+  "vendor_name": "S S Powertech",
+  "vendor_name_full": "M/S S S PowerTech",
+  "vendor_address": "Ranjanpada, Post Awas, Tal. Alibag, District. Raigad 402201",
+  "vendor_address_suffix": "Tal: Alibag,  DIST. RAIGAD, 402201.",
+
+  "officer_designation": "Deputy Executive Engineer Alibag II",
+  "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201"
+}
