@@ -13,7 +13,7 @@
   "inverter_capacity_kw": "3.3",
   "inverter_make": "Polycab Solar Pvt. Ltd",
   "pv_module_count": "6",
-  "module_capacity_kw": "3.3",
+  "module_capacity_watt": "3300",
 
   "installation_date": "4-June-2026",
   "agreement_date": "22/06/2026",
@@ -25,5 +25,15 @@
   "vendor_address_suffix": "Tal: Alibag,  DIST. RAIGAD, 402201.",
 
   "officer_designation": "Deputy Executive Engineer Alibag II",
-  "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201"
+  "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201",
+
+  "sanction_number": "4138/ALIBAG-II/75755227 Date:17-Jul-2026",
+  "capacity_kw_compact": "3.3KW",
+  "almm_model_number": "AE14HXXXVHC10B",
+  "module_wattage": "550 WP",
+  "total_capacity_kwp_note": "3.3KW (3300 / 1000 = 3.3)",
+  "inverter_model": "Vs-502s",
+  "mppt_count": "1",
+  "inverter_manufacture_year": "2025",
+  "meter_serial_number": "U6541057"
 }

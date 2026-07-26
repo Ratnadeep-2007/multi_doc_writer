@@ -137,11 +137,11 @@ The following schema is the single source of truth used across the templates:
 | `consumer_residential_address_suffix` | Consumer address district suffix (default provided) | Annex 2 only |
 | `sanctioned_capacity_kw` | MSEDCL Sanctioned load in kW | Commissioning, Proforma A, Annexure 3 |
 | `rooftop_capacity_kw` | Actual solar installation capacity in kW | Commissioning Report |
-| `module_make` | PV Solar module make/brand | Commissioning Report |
+| `module_make` | PV Solar Panel Module make/brand | Commissioning Report |
 | `inverter_capacity_kw` | Inverter rating capacity in kW | Commissioning Report |
 | `inverter_make` | Inverter brand/manufacturer | Commissioning Report |
-| `pv_module_count` | Number of physical PV panels | Commissioning Report |
-| `module_capacity_kw` | Total solar capacity of modules in kW | Commissioning Report |
+| `pv_module_count` | Number of physical PV solar panel modules | Commissioning Report |
+| `module_capacity_watt` | Total solar capacity of solar panel modules in Watt | Commissioning Report |
 | `installation_date` | Date of solar installation (e.g. 4-June-2026) | Commissioning, Proforma A |
 | `agreement_date` | Date of connection agreement (e.g. 22/06/2026) | Annexure 3, Annex 2 |
 | `execution_date_text` | Execution date in full text (e.g. 22nd of June 2026) | Annex 2 only |

@@ -13,6 +13,8 @@ If output_folder is omitted, files go into ./output/<consumer_name>/
 import sys
 import json
 import re
+import shutil
+import zipfile
 from pathlib import Path
 from docxtpl import DocxTemplate
 
@@ -24,6 +26,8 @@ TEMPLATES = [
     "Guarantee_Certificate_TEMPLATE.docx",
     "Annexure3_TEMPLATE.docx",
     "Annex2_TEMPLATE.docx",
+    "WorkCompletionReport_TEMPLATE.docx",
+    "MeterTestingLetter_TEMPLATE.docx",
 ]
 
 # Every field used by at least one template. If a field is missing from
@@ -33,9 +37,12 @@ REQUIRED_FIELDS = [
     "consumer_name", "consumer_number", "mobile_number", "email",
     "install_address", "consumer_residential_address",
     "sanctioned_capacity_kw", "rooftop_capacity_kw", "module_make",
-    "inverter_capacity_kw", "inverter_make", "pv_module_count", "module_capacity_kw",
+    "inverter_capacity_kw", "inverter_make", "pv_module_count", "module_capacity_watt",
     "installation_date", "agreement_date", "execution_date_text",
     "vendor_name", "vendor_name_full", "vendor_address",
+    "sanction_number", "almm_model_number",
+    "module_wattage", "inverter_model",
+    "mppt_count", "inverter_manufacture_year", "meter_serial_number",
 ]
 
 DEFAULTS = {
@@ -46,9 +53,40 @@ DEFAULTS = {
 }
 
 
+def dedupe_docx(path):
+    """Fix a docxtpl quirk seen with templates converted from legacy .doc
+    files (like MeterTestingLetter_TEMPLATE.docx): it can write duplicate
+    zip entries (e.g. docProps/core.xml twice), which corrupts the file for
+    some readers (LibreOffice in particular). Keeps the last copy of each
+    entry. Safe to run on any docx -- it's a no-op if there are no dupes."""
+    tmp = str(path) + ".fixed"
+    with zipfile.ZipFile(path, "r") as zin:
+        last = {item.filename: item for item in zin.infolist()}
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+            written = set()
+            for item in zin.infolist():
+                if item.filename in written:
+                    continue
+                written.add(item.filename)
+                zout.writestr(last[item.filename], zin.read(last[item.filename]))
+    shutil.move(tmp, path)
+
+
 def load_input(path: str) -> dict:
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
+
+    # Auto-calculate total solar panel capacity (Watt) = panel count * panel wattage
+    if "pv_module_count" in data and "module_wattage" in data:
+        try:
+            count = int(data["pv_module_count"])
+            watt_match = re.search(r"\d+", str(data["module_wattage"]))
+            if watt_match and count > 0:
+                watt_val = int(watt_match.group(0))
+                data["module_capacity_watt"] = str(count * watt_val)
+        except Exception:
+            pass
+
     missing = [k for k in REQUIRED_FIELDS if k not in data or str(data[k]).strip() == ""]
     if missing:
         print("ERROR: these fields are missing/blank in your input file:")
@@ -95,6 +133,7 @@ def main():
         out_name = template_name.replace("_TEMPLATE", "")
         out_path = out_dir / out_name
         doc.save(out_path)
+        dedupe_docx(out_path)
         print(f"generated: {out_path}")
 
     print(f"\nAll {len(TEMPLATES)} documents generated in: {out_dir}")

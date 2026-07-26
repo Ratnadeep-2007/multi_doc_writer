@@ -1,7 +1,7 @@
 @echo off
-title Solar Docs CLI Runner
+title Solar Docs CLI Runner (Sample 1)
 echo ==============================================
-echo  Running Solar Docs CLI Generator on Sample...
+echo  Running Solar Docs CLI Generator on Sample 1...
 echo ==============================================
 echo.
 cd /d "%~dp0"
@@ -29,6 +29,6 @@ if exist "output\SACHIN_SAHDEV_GAWAND" (
 )
 
 echo.
-echo Finished generating sample documents!
+echo Finished generating sample 1 documents!
 echo ==============================================
 pause

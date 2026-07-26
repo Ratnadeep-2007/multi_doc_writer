@@ -9,6 +9,8 @@ templates = [
     "Guarantee_Certificate.docx",
     "Annexure3.docx",
     "Annex2.docx",
+    "WorkCompletionReport.docx",
+    "MeterTestingLetter.docx",
 ]
 
 if not out_root.exists() or not list(out_root.glob("*")):

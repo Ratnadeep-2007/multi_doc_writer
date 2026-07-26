@@ -13,7 +13,7 @@
   "inverter_capacity_kw": "4.4",
   "inverter_make": "Growatt New Energy",
   "pv_module_count": "8",
-  "module_capacity_kw": "4.4",
+  "module_capacity_watt": "4400",
 
   "installation_date": "12-July-2026",
   "agreement_date": "18/07/2026",
@@ -25,5 +25,15 @@
   "vendor_address_suffix": "Tal: Alibag,  DIST. RAIGAD, 402201.",
 
   "officer_designation": "Deputy Executive Engineer Alibag II",
-  "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201"
+  "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201",
+
+  "sanction_number": "4138/ALIBAG-II/78765126 Date:27-May-2026",
+  "capacity_kw_compact": "4.4KW",
+  "almm_model_number": "AE14HXXXVHC20C",
+  "module_wattage": "550 WP",
+  "total_capacity_kwp_note": "4.4KW (4400 / 1000 = 4.4)",
+  "inverter_model": "Vs-604s",
+  "mppt_count": "1",
+  "inverter_manufacture_year": "2025",
+  "meter_serial_number": "U6541099"
 }

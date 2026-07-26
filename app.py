@@ -24,7 +24,27 @@ TEMPLATES = [
     "Guarantee_Certificate_TEMPLATE.docx",
     "Annexure3_TEMPLATE.docx",
     "Annex2_TEMPLATE.docx",
+    "WorkCompletionReport_TEMPLATE.docx",
+    "MeterTestingLetter_TEMPLATE.docx",
 ]
+
+
+def dedupe_docx_bytes(data: bytes) -> bytes:
+    """Fix a docxtpl quirk (seen with MeterTestingLetter_TEMPLATE.docx,
+    which started life as a legacy .doc file) where saved docx files can
+    contain duplicate zip entries, corrupting the file for some readers.
+    No-op if there are no duplicates."""
+    src = zipfile.ZipFile(io.BytesIO(data), "r")
+    last = {item.filename: item for item in src.infolist()}
+    out_buf = io.BytesIO()
+    with zipfile.ZipFile(out_buf, "w", zipfile.ZIP_DEFLATED) as zout:
+        written = set()
+        for item in src.infolist():
+            if item.filename in written:
+                continue
+            written.add(item.filename)
+            zout.writestr(last[item.filename], src.read(last[item.filename]))
+    return out_buf.getvalue()
 
 # Group fields logically for the UI
 GROUPS = [
@@ -53,11 +73,17 @@ GROUPS = [
         "fields": [
             {"label": "Sanctioned Capacity (KW)", "name": "sanctioned_capacity_kw", "ph": "3.3", "required": True},
             {"label": "Rooftop Installed Capacity (KW)", "name": "rooftop_capacity_kw", "ph": "3", "required": True},
-            {"label": "PV Module Count", "name": "pv_module_count", "ph": "6", "required": True},
-            {"label": "Module Capacity (KW)", "name": "module_capacity_kw", "ph": "3.3", "required": True},
-            {"label": "Module Make / Manufacturer", "name": "module_make", "ph": "Waaree India pvt ltd", "required": True},
+            {"label": "Sanction Number (with date)", "name": "sanction_number", "ph": "4138/ALIBAG-II/75755227 Date:17-Jul-2026", "required": True, "full_width": True},
+            {"label": "PV Solar Panel Module Count", "name": "pv_module_count", "ph": "6", "required": True},
+            {"label": "Solar Panel Module Wattage", "name": "module_wattage", "ph": "550 WP", "required": True},
+            {"label": "Solar Panel Module Capacity (Watt, Auto-calculated)", "name": "module_capacity_watt", "ph": "3300", "required": False, "full_width": True},
+            {"label": "Solar Panel Module Make / Manufacturer", "name": "module_make", "ph": "Waaree India pvt ltd", "required": True},
+            {"label": "ALMM Model Number", "name": "almm_model_number", "ph": "AE14HXXXVHC10B", "required": True},
             {"label": "Inverter Capacity (KW)", "name": "inverter_capacity_kw", "ph": "3.3", "required": True},
             {"label": "Inverter Make / Manufacturer", "name": "inverter_make", "ph": "Polycab Solar Pvt. Ltd", "required": True},
+            {"label": "Inverter Model / Rating", "name": "inverter_model", "ph": "Vs-502s", "required": True},
+            {"label": "MPPT / Charge Controller Count", "name": "mppt_count", "ph": "1", "required": True},
+            {"label": "Inverter Year of Manufacturing", "name": "inverter_manufacture_year", "ph": "2025", "required": True},
         ]
     },
     {
@@ -85,6 +111,13 @@ GROUPS = [
         "fields": [
             {"label": "MSEDCL Officer Designation", "name": "officer_designation", "ph": "Deputy Executive Engineer Alibag II", "required": False, "default": "Deputy Executive Engineer Alibag II", "full_width": True},
             {"label": "Subdivision Registered Office Address", "name": "subdivision_address", "ph": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201", "required": False, "default": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201", "full_width": True},
+        ]
+    },
+    {
+        "title": "Meter Testing Letter",
+        "icon": "🔌",
+        "fields": [
+            {"label": "Meter Serial Number", "name": "meter_serial_number", "ph": "U6541057", "required": True},
         ]
     }
 ]
@@ -340,7 +373,7 @@ FORM_HTML = """
   
   <form method="POST" action="/generate">
     {% for group in groups %}
-      <div class="card {% if group.title in ['Address Information', 'MSEDCL Subdivision (Optional)'] %}full-width-section{% endif %}">
+      <div class="card {% if group.title in ['Solar System Specs', 'Address Information', 'MSEDCL Subdivision (Optional)'] %}full-width-section{% endif %}">
         <h2 class="card-title">{{ group.icon }} {{ group.title }}</h2>
         <div class="grid-fields {% if group.title in ['Consumer General Info', 'Solar System Specs', 'Execution & Agreement Dates'] %}grid-2{% endif %}">
           {% for field in group.fields %}
@@ -391,7 +424,7 @@ const sampleData = {
   "inverter_capacity_kw": "3.3",
   "inverter_make": "Polycab Solar Pvt. Ltd",
   "pv_module_count": "6",
-  "module_capacity_kw": "3.3",
+  "module_capacity_watt": "3300",
   "installation_date": "4-June-2026",
   "agreement_date": "22/06/2026",
   "execution_date_text": "22nd of June 2026",
@@ -400,7 +433,16 @@ const sampleData = {
   "vendor_address": "Ranjanpada, Post Awas, Tal. Alibag, District. Raigad 402201",
   "vendor_address_suffix": "Tal: Alibag,  DIST. RAIGAD, 402201.",
   "officer_designation": "Deputy Executive Engineer Alibag II",
-  "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201"
+  "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201",
+  "sanction_number": "4138/ALIBAG-II/75755227 Date:17-Jul-2026",
+  "capacity_kw_compact": "3.3KW",
+  "almm_model_number": "AE14HXXXVHC10B",
+  "module_wattage": "550 WP",
+  "total_capacity_kwp_note": "3.3KW (3300 / 1000 = 3.3)",
+  "inverter_model": "Vs-502s",
+  "mppt_count": "1",
+  "inverter_manufacture_year": "2025",
+  "meter_serial_number": "U6541057"
 };
 
 function fillSampleData() {
@@ -410,7 +452,30 @@ function fillSampleData() {
       input.value = value;
     }
   }
+  autoCalcModuleCapacity();
 }
+
+function autoCalcModuleCapacity() {
+  const countInput = document.getElementById("pv_module_count");
+  const wattInput = document.getElementById("module_wattage");
+  const capacityInput = document.getElementById("module_capacity_watt");
+  
+  if (countInput && wattInput && capacityInput) {
+    const count = parseInt(countInput.value) || 0;
+    const wattMatch = wattInput.value.match(/\d+/);
+    const watt = wattMatch ? parseInt(wattMatch[0]) : 0;
+    if (count > 0 && watt > 0) {
+      capacityInput.value = (count * watt).toString();
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const countInput = document.getElementById("pv_module_count");
+  const wattInput = document.getElementById("module_wattage");
+  if (countInput) countInput.addEventListener("input", autoCalcModuleCapacity);
+  if (wattInput) wattInput.addEventListener("input", autoCalcModuleCapacity);
+});
 </script>
 </body>
 </html>
@@ -440,6 +505,16 @@ def generate():
                 
             data[name] = val
 
+    # Auto-calculate module_capacity_watt from panel count * panel wattage
+    if data.get("pv_module_count") and data.get("module_wattage"):
+        try:
+            count = int(data["pv_module_count"])
+            watt_match = re.search(r"\d+", str(data["module_wattage"]))
+            if watt_match and count > 0:
+                data["module_capacity_watt"] = str(count * int(watt_match.group(0)))
+        except Exception:
+            pass
+
     # Validate that required fields are not empty
     missing = []
     for group in GROUPS:
@@ -457,9 +532,9 @@ def generate():
             doc.render(data)
             buf = io.BytesIO()
             doc.save(buf)
-            buf.seek(0)
+            fixed_bytes = dedupe_docx_bytes(buf.getvalue())
             out_name = template_name.replace("_TEMPLATE", "")
-            zf.writestr(out_name, buf.read())
+            zf.writestr(out_name, fixed_bytes)
 
     mem_zip.seek(0)
     folder = safe_folder_name(data["consumer_name"]) or "documents"
