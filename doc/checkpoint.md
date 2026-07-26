@@ -1,35 +1,52 @@
 # Session Checkpoint: Solar Docs Automation
 
-**Date**: 2026-07-26
-**Conversation ID**: `3210c02c-2bd2-4633-85f4-8ffd3baf6cda`
+**Date**: 2026-07-26  
+**Repository**: [Ratnadeep-2007/multi_doc_writer](https://github.com/Ratnadeep-2007/multi_doc_writer)  
+**Branch**: `main`
 
 ---
 
-## 🎯 Goals & Status
+## 🎯 Recent Milestones & System Status
 
-- [x] Copy project assets to output delivery folder (ZIP packaging)
-- [x] Write project README with installation and running guide
-- [x] Temaplatize hardcoded subdivision fields (MSEDCL Officer designation, registered office, local district/pin suffixes)
-- [x] Convert web app to a premium glassmorphic, mobile-friendly interface
-- [x] Implement smart default fallbacks for optional/new fields to ensure backward compatibility
-- [x] Create a second mock dataset (Rane family project) and automated runner script
-- [x] Upgrade output verification tool (`verify_rendered.py`) to dynamically scan all generated folders
-- [x] Rename delivery ZIP package to include `_test` in its name
+- [x] **Expanded Template Suite (5 $\rightarrow$ 7 Docs)**: Added `WorkCompletionReport_TEMPLATE.docx` and `MeterTestingLetter_TEMPLATE.docx`.
+- [x] **Auto-Calculated Panel Capacity**: Implemented real-time dynamic calculation of Total Solar Panel Capacity ($\text{Panel Count} \times \text{Panel Wattage} = \text{Capacity in Watt}$) across frontend JS, Flask backend, and CLI runner.
+- [x] **Unit & Terminology Standardizations**: Converted `module_capacity_kw` to `module_capacity_watt` and updated terminology from "Module" to **"Solar Panel Module"** across all form labels, templates, and documentation.
+- [x] **Un-highlighted Clean Rendering**: Removed all `<w:highlight>` XML tags from Word templates. All 7 output documents render with zero yellow background shading (`highlight_count = 0`).
+- [x] **Field Streamlining & Form Consolidation**: Removed redundant fields (`capacity_kw_compact`, `total_capacity_kwp_note`) and merged the "Work Completion Report" fields into the **Solar System Specs** card.
+- [x] **1-to-1 Field Alignment**: Verified 30 unique non-redundant fields across all 7 templates, `generate_docs.py`, and `app.py`.
+- [x] **Empirical Verification**: `python verify_rendered.py` passed with **0 unresolved Jinja placeholders** across all sample generated outputs.
+- [x] **GitHub Push**: Committed and pushed all updates to `origin/main`.
 
 ---
 
-## 📂 Current Work Directory State
+## 📂 Project Directory Structure
 
-The workspace is fully cleaned of temporary script files and updated with the following:
-* [app.py](file:///E:/webstack/multi_doc_writer/app.py): Upgraded Flask web application.
-* [generate_docs.py](file:///E:/webstack/multi_doc_writer/generate_docs.py): Upgraded CLI document generator.
-* [sample_input.json](file:///E:/webstack/multi_doc_writer/sample_input.json): Sachin Gawand sample data (contains new subdivision fields).
-* [sample_input_2.json](file:///E:/webstack/multi_doc_writer/sample_input_2.json): Ashish Rane sample data.
-* [verify_rendered.py](file:///E:/webstack/multi_doc_writer/verify_rendered.py): Dynamic folder-scanning XML validator.
-* [start_web_app.bat](file:///E:/webstack/multi_doc_writer/start_web_app.bat): Double-click browser/server starter.
-* [run_cli_sample.bat](file:///E:/webstack/multi_doc_writer/run_cli_sample.bat): Double-click runner for sample 1.
-* [run_cli_sample_2.bat](file:///E:/webstack/multi_doc_writer/run_cli_sample_2.bat): Double-click runner for sample 2.
-* [README.md](file:///E:/webstack/multi_doc_writer/README.md): Step-by-step setup and user instructions.
+```
+multi_doc_writer/
+├── start_web_app.bat         # Automated launcher for local Flask web app
+├── run_cli_sample.bat        # Automated CLI runner for Sample 1 (Gawand project)
+├── run_cli_sample_2.bat      # Automated CLI runner for Sample 2 (Rane project)
+├── app.py                     # Flask Web App (glassmorphic UI + zip download)
+├── generate_docs.py           # CLI runner script (JSON in, 7 DOCX out)
+├── sample_input.json          # Primary sample dataset (Sachin Gawand)
+├── sample_input_2.json        # Secondary sample dataset (Ashish Rane)
+├── verify_rendered.py         # Verification tool (validates unrendered Jinja tags & zip integrity)
+├── README.md                  # Comprehensive setup & architecture documentation
+├── templates/                 # Render-ready Word templates with Jinja2 placeholders
+│   ├── Annex2_TEMPLATE.docx
+│   ├── Annexure3_TEMPLATE.docx
+│   ├── Commissioning_Report_TEMPLATE.docx
+│   ├── Guarantee_Certificate_TEMPLATE.docx
+│   ├── MeterTestingLetter_TEMPLATE.docx
+│   ├── Proforma_A_TEMPLATE.docx
+│   └── WorkCompletionReport_TEMPLATE.docx
+└── doc/                       # System memory, handoff notes, and architecture checkpoints
+    ├── checkpoint.md
+    ├── project_memory.md
+    ├── PROJECT_HANDOFF.md
+    ├── TECH_STACK.md
+    └── TOOLS.md
+```
 
 ---
 
@@ -43,6 +60,8 @@ Running `python verify_rendered.py` yields:
   PASS: Guarantee_Certificate.docx contains no unresolved Jinja placeholders.
   PASS: Annexure3.docx contains no unresolved Jinja placeholders.
   PASS: Annex2.docx contains no unresolved Jinja placeholders.
+  PASS: WorkCompletionReport.docx contains no unresolved Jinja placeholders.
+  PASS: MeterTestingLetter.docx contains no unresolved Jinja placeholders.
 Result: All files for ASHISH_JAYVANT_RANE verified successfully!
 
 === Verifying output for: SACHIN_SAHDEV_GAWAND ===
@@ -51,8 +70,10 @@ Result: All files for ASHISH_JAYVANT_RANE verified successfully!
   PASS: Guarantee_Certificate.docx contains no unresolved Jinja placeholders.
   PASS: Annexure3.docx contains no unresolved Jinja placeholders.
   PASS: Annex2.docx contains no unresolved Jinja placeholders.
+  PASS: WorkCompletionReport.docx contains no unresolved Jinja placeholders.
+  PASS: MeterTestingLetter.docx contains no unresolved Jinja placeholders.
 Result: All files for SACHIN_SAHDEV_GAWAND verified successfully!
 
 SUCCESS: All generated documents across all folders verified successfully!
 ```
-* **Status**: **ALL PASS** (No unresolved brackets or rendering anomalies found in output files).
+* **Status**: **ALL PASS** (0 unresolved brackets, 0 duplicate zip entries).
