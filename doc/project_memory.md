@@ -30,6 +30,13 @@
   * `{{ sanctioned_capacity_kw }}KW`
   * `{{ sanctioned_capacity_kw }}KW ({{ module_capacity_watt }} / 1000 = {{ sanctioned_capacity_kw }})`
 
+### 6. Suffix and Unit Sanitization (Unit-Free Input Fields)
+* **Goal**: Enable the user to enter only numeric digits for solar panel capacity and inverter capacity without manual text units like "KW", "W", "WP".
+* **Implementation**:
+  * Added the `WP` unit suffix directly inside the `WorkCompletionReport_TEMPLATE.docx` layout file (`{{ module_wattage }} WP`).
+  * Updated `app.py` and `generate_docs.py` to automatically strip any trailing alphabetic units (e.g. `WP`, `W`) if entered by the user, ensuring clean numeric values are sent to the templating engine.
+  * Changed the web form UI label and placeholder for the solar module wattage to guide the user to input only numbers (e.g. `550`).
+
 ---
 
 ## 🎨 UI/UX Design System

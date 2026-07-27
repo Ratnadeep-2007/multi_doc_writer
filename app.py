@@ -75,7 +75,7 @@ GROUPS = [
             {"label": "Rooftop Installed Capacity (KW)", "name": "rooftop_capacity_kw", "ph": "3", "required": True},
             {"label": "Sanction Number (with date)", "name": "sanction_number", "ph": "4138/ALIBAG-II/75755227 Date:17-Jul-2026", "required": True, "full_width": True},
             {"label": "PV Solar Panel Module Count", "name": "pv_module_count", "ph": "6", "required": True},
-            {"label": "Solar Panel Module Wattage", "name": "module_wattage", "ph": "550 WP", "required": True},
+            {"label": "Solar Panel Module Wattage (W)", "name": "module_wattage", "ph": "550", "required": True},
             {"label": "Solar Panel Module Capacity (Watt, Auto-calculated)", "name": "module_capacity_watt", "ph": "3300", "required": False, "full_width": True},
             {"label": "Solar Panel Module Make / Manufacturer", "name": "module_make", "ph": "Waaree India pvt ltd", "required": True},
             {"label": "ALMM Model Number", "name": "almm_model_number", "ph": "AE14HXXXVHC10B", "required": True},
@@ -511,7 +511,10 @@ def generate():
             count = int(data["pv_module_count"])
             watt_match = re.search(r"\d+", str(data["module_wattage"]))
             if watt_match and count > 0:
-                data["module_capacity_watt"] = str(count * int(watt_match.group(0)))
+                watt_val = int(watt_match.group(0))
+                data["module_capacity_watt"] = str(count * watt_val)
+                # Clean module_wattage to only be the number, so the template appends WP
+                data["module_wattage"] = str(watt_val)
         except Exception:
             pass
 

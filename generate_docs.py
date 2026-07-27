@@ -84,6 +84,8 @@ def load_input(path: str) -> dict:
             if watt_match and count > 0:
                 watt_val = int(watt_match.group(0))
                 data["module_capacity_watt"] = str(count * watt_val)
+                # Clean module_wattage to only be the number, so the template appends WP
+                data["module_wattage"] = str(watt_val)
         except Exception:
             pass
 

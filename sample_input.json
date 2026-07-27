@@ -30,7 +30,7 @@
   "sanction_number": "4138/ALIBAG-II/75755227 Date:17-Jul-2026",
   "capacity_kw_compact": "3.3KW",
   "almm_model_number": "AE14HXXXVHC10B",
-  "module_wattage": "550 WP",
+  "module_wattage": "550",
   "total_capacity_kwp_note": "3.3KW (3300 / 1000 = 3.3)",
   "inverter_model": "Vs-502s",
   "mppt_count": "1",

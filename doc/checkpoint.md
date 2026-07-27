@@ -14,6 +14,7 @@
 - [x] **Un-highlighted Clean Rendering**: Removed all `<w:highlight>` XML tags from Word templates. All 7 output documents render with zero yellow background shading (`highlight_count = 0`).
 - [x] **Field Streamlining & Form Consolidation**: Removed redundant fields (`capacity_kw_compact`, `total_capacity_kwp_note`) and merged the "Work Completion Report" fields into the **Solar System Specs** card.
 - [x] **1-to-1 Field Alignment**: Verified 30 unique non-redundant fields across all 7 templates, `generate_docs.py`, and `app.py`.
+- [x] **Unit-Free Input Fields**: Updated `WorkCompletionReport_TEMPLATE.docx` to have `{{ module_wattage }} WP` unit suffix directly in layout, updated form placeholder and label, and sanitized suffix string in Python scripts.
 - [x] **Empirical Verification**: `python verify_rendered.py` passed with **0 unresolved Jinja placeholders** across all sample generated outputs.
 - [x] **GitHub Push**: Committed and pushed all updates to `origin/main`.
 
