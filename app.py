@@ -131,18 +131,46 @@ FORM_HTML = r"""
 <title>Solar Docs Generator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-primary: #0b0f19;
-    --bg-surface: rgba(22, 30, 49, 0.7);
-    --border-color: rgba(255, 255, 255, 0.08);
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --accent: #8b5cf6;
-    --accent-hover: #a78bfa;
+    --bg-primary: #080a10;
+    --bg-surface: rgba(17, 24, 43, 0.45);
+    --bg-sidebar: rgba(10, 12, 22, 0.9);
+    --border-color: rgba(255, 255, 255, 0.05);
+    --text-primary: #f8fafc;
+    --text-secondary: #64748b;
+    --accent: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.15);
+    --accent-hover: #818cf8;
+    --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    --card-hover-border: rgba(99, 102, 241, 0.25);
     --success: #10b981;
-    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --success-glow: rgba(16, 185, 129, 0.15);
+    --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+  
+  [data-theme="cyberpunk"] {
+    --bg-primary: #050508;
+    --bg-surface: rgba(9, 24, 38, 0.45);
+    --bg-sidebar: rgba(5, 12, 20, 0.9);
+    --accent: #00f2fe;
+    --accent-glow: rgba(0, 242, 254, 0.15);
+    --accent-hover: #4facfe;
+    --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    --card-hover-border: rgba(0, 242, 254, 0.25);
+  }
+
+  [data-theme="sunset"] {
+    --bg-primary: #0d0909;
+    --bg-surface: rgba(30, 16, 16, 0.45);
+    --bg-sidebar: rgba(15, 8, 8, 0.9);
+    --accent: #f59e0b;
+    --accent-glow: rgba(245, 158, 11, 0.15);
+    --accent-hover: #fbbf24;
+    --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    --card-hover-border: rgba(245, 158, 11, 0.25);
   }
   
   * {
@@ -152,251 +180,598 @@ FORM_HTML = r"""
   }
   
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: radial-gradient(circle at 10% 20%, #1e1b4b 0%, #0f172a 50%, #020617 100%);
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.05) 0px, transparent 50%);
     background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
-    padding: 40px 20px;
+    display: flex;
+    overflow-x: hidden;
     line-height: 1.5;
   }
-  
-  .container {
-    max-width: 1000px;
-    margin: 0 auto;
+
+  .app-layout {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
   }
-  
-  header {
-    text-align: center;
+
+  /* Sidebar Design */
+  .sidebar {
+    width: 320px;
+    background: var(--bg-sidebar);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid var(--border-color);
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 40px;
   }
-  
-  h1 {
-    font-family: 'Outfit', sans-serif;
-    font-size: 2.5rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #6366f1 100%);
+
+  .logo-icon {
+    font-size: 1.8rem;
+    background: var(--accent-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 8px;
+    filter: drop-shadow(0 0 10px var(--accent-glow));
   }
-  
-  .subtitle {
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-    font-weight: 400;
+
+  .logo-text {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
-  
-  .actions-bar {
+
+  .sidebar-progress {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 32px;
+  }
+
+  .progress-info {
     display: flex;
-    justify-content: flex-end;
-    margin-bottom: 24px;
-    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
   }
-  
-  .btn-secondary {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-    padding: 10px 18px;
-    border-radius: 8px;
+
+  .progress-label {
+    color: var(--text-secondary);
     font-weight: 500;
+  }
+
+  .progress-pct {
+    font-weight: 700;
+    color: var(--accent-hover);
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--accent-gradient);
+    border-radius: 3px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px var(--accent-hover);
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 24px;
+    padding-right: 4px;
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+  }
+
+  .sidebar-nav ul {
+    list-style: none;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+  }
+
+  .nav-item.active {
+    background: var(--accent-glow);
+    border-color: rgba(99, 102, 241, 0.15);
+    color: var(--text-primary);
+  }
+
+  .nav-icon {
+    font-size: 1.1rem;
+    margin-right: 12px;
+  }
+
+  .nav-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .nav-status-badge {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .nav-status-badge.complete {
+    color: var(--success);
+    font-weight: bold;
+    text-shadow: 0 0 8px var(--success);
+  }
+
+  .sidebar-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .btn-sample-load {
+    background: var(--accent-gradient);
+    border: none;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s ease;
     font-family: inherit;
+    box-shadow: 0 4px 15px var(--accent-glow);
   }
-  
-  .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--accent-hover);
+
+  .btn-sample-load:hover {
     transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
   }
-  
+
+  .theme-picker {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 8px;
+  }
+
+  .theme-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .theme-dot:hover {
+    transform: scale(1.15);
+  }
+
+  .theme-dot.active {
+    border-color: var(--text-primary);
+  }
+
+  .theme-indigo { background: #6366f1; }
+  .theme-cyberpunk { background: #00f2fe; }
+  .theme-sunset { background: #f59e0b; }
+
+  /* Main Content Layout */
+  .main-content {
+    margin-left: 320px;
+    flex: 1;
+    padding: 60px 80px;
+    max-width: 1100px;
+    width: calc(100% - 320px);
+  }
+
+  .app-header {
+    margin-bottom: 48px;
+  }
+
+  .app-header h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 3rem;
+    font-weight: 850;
+    letter-spacing: -1px;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+
+  .app-header .subtitle {
+    color: var(--text-secondary);
+    font-size: 1.15rem;
+    font-weight: 400;
+  }
+
+  /* Form and Cards Styles */
   form {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 32px;
   }
-  
-  @media(min-width: 768px) {
-    form {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .full-width-section {
-      grid-column: span 2;
-    }
-  }
-  
+
   .card {
     background: var(--bg-surface);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 24px;
+    border-radius: 20px;
+    padding: 36px;
     box-shadow: var(--shadow);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    scroll-margin-top: 40px;
   }
-  
+
   .card:hover {
-    box-shadow: 0 12px 40px 0 rgba(139, 92, 246, 0.1);
+    border-color: var(--card-hover-border);
+    box-shadow: 0 20px 45px -15px var(--accent-glow);
+    transform: translateY(-2px);
   }
-  
+
   .card-title {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 20px;
-    color: var(--accent-hover);
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 28px;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    padding-bottom: 12px;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
   }
-  
+
   .grid-fields {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 20px;
   }
-  
-  @media(min-width: 480px) {
+
+  .grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media(max-width: 768px) {
     .grid-2 {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: 1fr;
     }
   }
-  
+
   .field-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
-  
+
   .span-2 {
     grid-column: span 2;
   }
-  
+
+  @media(max-width: 768px) {
+    .span-2 {
+      grid-column: span 1;
+    }
+  }
+
   label {
     font-size: 0.85rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
   }
-  
+
   .required-asterisk {
     color: #ef4444;
-    margin-left: 2px;
+    margin-left: 3px;
+    font-size: 0.9rem;
   }
-  
+
+  /* Form Elements Control */
   input, select {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 10px 12px;
+    background: rgba(10, 12, 22, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 16px;
     color: var(--text-primary);
     font-family: inherit;
     font-size: 0.95rem;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   input {
     width: 100%;
   }
-  
+
   select {
     cursor: pointer;
     min-width: 90px;
   }
-  
+
   option {
-    background: #0f172a;
+    background: #0f121d;
     color: var(--text-primary);
   }
-  
+
   input::placeholder {
-    color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.2);
   }
-  
+
   input:focus, select:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
-    background: rgba(15, 23, 42, 0.85);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    background: rgba(10, 12, 22, 0.8);
   }
-  
+
   .hint-text {
     font-size: 0.75rem;
     color: var(--text-secondary);
+    font-weight: 500;
   }
-  
+
   .submit-container {
-    grid-column: 1 / -1;
     text-align: center;
-    margin-top: 20px;
+    margin-top: 16px;
   }
-  
+
   .btn-primary {
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    background: var(--accent-gradient);
     border: none;
     color: white;
-    padding: 16px 40px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: 12px;
+    padding: 18px 48px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    border-radius: 14px;
     cursor: pointer;
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 10px 25px var(--accent-glow);
     transition: all 0.2s ease;
     font-family: inherit;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
-  
+
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45);
-    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #4f46e5 100%);
+    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.45);
   }
-  
+
   .btn-primary:active {
     transform: translateY(0);
   }
-  
+
   footer {
     text-align: center;
-    margin-top: 60px;
+    margin-top: 48px;
     color: var(--text-secondary);
     font-size: 0.85rem;
+    padding-bottom: 24px;
+  }
+
+  /* Loader Modal Overlay */
+  .loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(6, 8, 14, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s ease;
+  }
+  
+  .loader-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 48px;
+    text-align: center;
+    box-shadow: 0 30px 60px -10px rgba(0, 0, 0, 0.7);
+    max-width: 380px;
+    width: 90%;
+  }
+  
+  .spinner {
+    width: 64px;
+    height: 64px;
+    border: 4px solid rgba(255, 255, 255, 0.05);
+    border-top: 4px solid var(--accent);
+    border-radius: 50%;
+    animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    margin: 0 auto 28px;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  
+  .loader-card h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .loader-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Responsive styling */
+  @media (max-width: 992px) {
+    .app-layout {
+      flex-direction: column;
+    }
+    
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+      border-right: none;
+      border-bottom: 1px solid var(--border-color);
+      padding: 32px 24px;
+    }
+    
+    .main-content {
+      margin-left: 0;
+      width: 100%;
+      padding: 40px 24px;
+    }
+    
+    .app-header h1 {
+      font-size: 2.2rem;
+    }
   }
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <h1>Solar Docs Auto-Fill</h1>
-    <p class="subtitle">Fill the form once to generate all 5 solar project installation documents</p>
-  </header>
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">☀️</span>
+      <span class="logo-text">Solar Docs</span>
+    </div>
+    
+    <!-- Progress Indicator -->
+    <div class="sidebar-progress">
+      <div class="progress-info">
+        <span class="progress-label">Completion Status</span>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar" id="progress-bar" style="width: 0%;"></div>
+      </div>
+    </div>
+    
+    <!-- Navigation list -->
+    <nav class="sidebar-nav">
+      <ul>
+        {% for group in groups %}
+          <li class="nav-item" data-section="{{ loop.index0 }}" onclick="scrollToSection('card-section-{{ loop.index0 }}')">
+            <span class="nav-icon">{{ group.icon }}</span>
+            <span class="nav-title">{{ group.title }}</span>
+            <span class="nav-status-badge" id="badge-{{ loop.index0 }}">●</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+    
+    <!-- Theme & Quick Actions -->
+    <div class="sidebar-footer">
+      <button type="button" class="btn-sample-load" onclick="fillSampleData()">
+        ⚡ Load Sachin Gawand Sample
+      </button>
+      
+      <div class="theme-picker">
+        <button type="button" class="theme-dot theme-indigo active" onclick="setTheme('indigo')" title="Indigo Cosmic"></button>
+        <button type="button" class="theme-dot theme-cyberpunk" onclick="setTheme('cyberpunk')" title="Cyberpunk Neon"></button>
+        <button type="button" class="theme-dot theme-sunset" onclick="setTheme('sunset')" title="Sunset Flame"></button>
+      </div>
+    </div>
+  </aside>
   
-  <div class="actions-bar">
-    <button type="button" class="btn-secondary" onclick="fillSampleData()">⚡ Load Sachin Gawand Sample</button>
-  </div>
-  
-  <form method="POST" action="/generate">
-    {% for group in groups %}
-      <div class="card {% if group.title in ['Solar System Specs', 'Address Information', 'MSEDCL Subdivision (Optional)'] %}full-width-section{% endif %}">
-        <h2 class="card-title">{{ group.icon }} {{ group.title }}</h2>
-        <div class="grid-fields {% if group.title in ['Consumer General Info', 'Solar System Specs', 'Execution & Agreement Dates'] %}grid-2{% endif %}">
-          {% for field in group.fields %}
-            <div class="field-wrapper {% if field.full_width %}span-2{% endif %}">
-              <label for="{{ field.name }}">
-                {{ field.label }}
-                {% if field.required %}<span class="required-asterisk">*</span>{% endif %}
-              </label>
-              {% if field.unit_choices %}
-                <div style="display: flex; gap: 8px; width: 100%;">
+  <!-- Main Contents -->
+  <main class="main-content">
+    <header class="app-header">
+      <h1>Solar Docs Auto-Fill</h1>
+      <p class="subtitle">Enter customer details once to auto-generate all 7 project installation documents</p>
+    </header>
+    
+    <form method="POST" action="/generate" id="docs-form">
+      {% for group in groups %}
+        <div class="card {% if group.title in ['Solar System Specs', 'Address Information', 'MSEDCL Subdivision (Optional)'] %}full-width-section{% endif %}" id="card-section-{{ loop.index0 }}">
+          <h2 class="card-title">{{ group.icon }} {{ group.title }}</h2>
+          <div class="grid-fields {% if group.title in ['Consumer General Info', 'Solar System Specs', 'Execution & Agreement Dates'] %}grid-2{% endif %}">
+            {% for field in group.fields %}
+              <div class="field-wrapper {% if field.full_width %}span-2{% endif %}">
+                <label for="{{ field.name }}">
+                  {{ field.label }}
+                  {% if field.required %}<span class="required-asterisk">*</span>{% endif %}
+                </label>
+                {% if field.unit_choices %}
+                  <div style="display: flex; gap: 8px; width: 100%;">
+                    <input 
+                      type="text" 
+                      id="{{ field.name }}" 
+                      name="{{ field.name }}" 
+                      placeholder="{{ field.ph }}" 
+                      {% if field.default %}value="{{ field.default }}"{% endif %}
+                      {% if field.required %}required{% endif %}
+                      style="flex: 1;"
+                    >
+                    <select 
+                      name="{{ field.name }}_unit" 
+                      id="{{ field.name }}_unit"
+                    >
+                      {% for choice in field.unit_choices %}
+                        <option value="{{ choice }}" {% if choice == field.unit_default %}selected{% endif %}>{{ choice }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                {% else %}
                   <input 
                     type="text" 
                     id="{{ field.name }}" 
@@ -404,44 +779,35 @@ FORM_HTML = r"""
                     placeholder="{{ field.ph }}" 
                     {% if field.default %}value="{{ field.default }}"{% endif %}
                     {% if field.required %}required{% endif %}
-                    style="flex: 1;"
                   >
-                  <select 
-                    name="{{ field.name }}_unit" 
-                    id="{{ field.name }}_unit"
-                  >
-                    {% for choice in field.unit_choices %}
-                      <option value="{{ choice }}" {% if choice == field.unit_default %}selected{% endif %}>{{ choice }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              {% else %}
-                <input 
-                  type="text" 
-                  id="{{ field.name }}" 
-                  name="{{ field.name }}" 
-                  placeholder="{{ field.ph }}" 
-                  {% if field.default %}value="{{ field.default }}"{% endif %}
-                  {% if field.required %}required{% endif %}
-                >
-              {% endif %}
-              <span class="hint-text">e.g. {{ field.ph }}</span>
-            </div>
-          {% endfor %}
+                {% endif %}
+                <span class="hint-text">e.g. {{ field.ph }}</span>
+              </div>
+            {% endfor %}
+          </div>
         </div>
+      {% endfor %}
+      
+      <div class="submit-container">
+        <button type="submit" class="btn-primary">
+          📥 Generate & Download ZIP Package
+        </button>
       </div>
-    {% endfor %}
+    </form>
     
-    <div class="submit-container">
-      <button type="submit" class="btn-primary">
-        📥 Generate & Download ZIP
-      </button>
-    </div>
-  </form>
-  
-  <footer>
-    <p>Stateless offline tool. No data is stored or transmitted. Powered by Python, Flask, and docxtpl.</p>
-  </footer>
+    <footer>
+      <p>Stateless offline tool. No data is stored or transmitted. Powered by Python, Flask, and docxtpl.</p>
+    </footer>
+  </main>
+</div>
+
+<!-- Loader Modal Overlay -->
+<div id="loader-overlay" class="loader-overlay" style="display: none; opacity: 0;">
+  <div class="loader-card">
+    <div class="spinner"></div>
+    <h3>Generating Solar Docs</h3>
+    <p id="loader-text">Preparing documents...</p>
+  </div>
 </div>
 
 <script>
@@ -454,9 +820,12 @@ const sampleData = {
   "consumer_residential_address": "At Post Dhokawade",
   "consumer_residential_address_suffix": "TAL. ALIBAG, DIST. RAIGAD",
   "sanctioned_capacity_kw": "3.3",
+  "sanctioned_capacity_kw_unit": "kW",
   "rooftop_capacity_kw": "3",
+  "rooftop_capacity_kw_unit": "kW",
   "module_make": "Waaree India pvt ltd",
   "inverter_capacity_kw": "3.3",
+  "inverter_capacity_kw_unit": "kW",
   "inverter_make": "Polycab Solar Pvt. Ltd",
   "pv_module_count": "6",
   "module_capacity_watt": "3300",
@@ -472,7 +841,8 @@ const sampleData = {
   "sanction_number": "4138/ALIBAG-II/75755227 Date:17-Jul-2026",
   "capacity_kw_compact": "3.3KW",
   "almm_model_number": "AE14HXXXVHC10B",
-  "module_wattage": "550 WP",
+  "module_wattage": "550",
+  "module_wattage_unit": "WP",
   "total_capacity_kwp_note": "3.3KW (3300 / 1000 = 3.3)",
   "inverter_model": "Vs-502s",
   "mppt_count": "1",
@@ -488,6 +858,7 @@ function fillSampleData() {
     }
   }
   autoCalcModuleCapacity();
+  updateProgress();
 }
 
 function autoCalcModuleCapacity() {
@@ -505,11 +876,151 @@ function autoCalcModuleCapacity() {
   }
 }
 
+// Sidebar Scroll Function
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+// Theme Setting Function
+function setTheme(themeName) {
+  document.documentElement.setAttribute('data-theme', themeName);
+  document.querySelectorAll('.theme-dot').forEach(dot => {
+    dot.classList.remove('active');
+  });
+  const activeDot = document.querySelector(`.theme-${themeName}`);
+  if (activeDot) {
+    activeDot.classList.add('active');
+  }
+  localStorage.setItem('solar-docs-theme', themeName);
+}
+
+// Progress and Status calculation
+function updateProgress() {
+  const groups = {{ groups|tojson }};
+  let totalRequired = 0;
+  let filledRequired = 0;
+  
+  groups.forEach((group, idx) => {
+    let groupFilled = true;
+    let groupRequiredCount = 0;
+    
+    group.fields.forEach(field => {
+      if (field.required) {
+        groupRequiredCount++;
+        totalRequired++;
+        
+        const input = document.getElementById(field.name);
+        if (input && input.value.trim() !== "") {
+          filledRequired++;
+        } else {
+          groupFilled = false;
+        }
+      }
+    });
+    
+    // Update badge in sidebar
+    const badge = document.getElementById(`badge-${idx}`);
+    if (badge) {
+      if (groupRequiredCount === 0 || groupFilled) {
+        badge.innerHTML = "✓";
+        badge.className = "nav-status-badge complete";
+      } else {
+        badge.innerHTML = "●";
+        badge.className = "nav-status-badge";
+      }
+    }
+  });
+  
+  const pct = totalRequired > 0 ? Math.round((filledRequired / totalRequired) * 100) : 0;
+  document.getElementById('progress-pct').innerText = `${pct}%`;
+  document.getElementById('progress-bar').style.width = `${pct}%`;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  // Restore theme
+  const savedTheme = localStorage.getItem('solar-docs-theme') || 'indigo';
+  setTheme(savedTheme);
+
   const countInput = document.getElementById("pv_module_count");
   const wattInput = document.getElementById("module_wattage");
   if (countInput) countInput.addEventListener("input", autoCalcModuleCapacity);
   if (wattInput) wattInput.addEventListener("input", autoCalcModuleCapacity);
+  
+  // Track input to update progress
+  const inputs = document.querySelectorAll('input, select');
+  inputs.forEach(input => {
+    input.addEventListener('input', updateProgress);
+    input.addEventListener('change', updateProgress);
+  });
+  
+  updateProgress();
+
+  // Scroll active section highlighter using IntersectionObserver
+  const observerOptions = {
+    root: null,
+    rootMargin: '-20% 0px -60% 0px', // focused view zone
+    threshold: 0
+  };
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        const index = id.replace('card-section-', '');
+        
+        document.querySelectorAll('.nav-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        
+        const activeItem = document.querySelector(`.nav-item[data-section="${index}"]`);
+        if (activeItem) {
+          activeItem.classList.add('active');
+        }
+      }
+    });
+  }, observerOptions);
+  
+  document.querySelectorAll('.card').forEach(card => {
+    observer.observe(card);
+  });
+
+  // Handle Loader on submit
+  document.getElementById('docs-form').addEventListener('submit', function(e) {
+    const overlay = document.getElementById('loader-overlay');
+    overlay.style.display = 'flex';
+    setTimeout(() => { overlay.style.opacity = '1'; }, 10);
+    
+    const steps = [
+      "Reading MSEDCL templates...",
+      "Injecting dynamic consumer data...",
+      "Converting wattage & capacities...",
+      "Generating output documents...",
+      "Zipping package archives...",
+      "Triggering ZIP download..."
+    ];
+    
+    let stepIdx = 0;
+    document.getElementById('loader-text').innerText = steps[stepIdx];
+    
+    const interval = setInterval(() => {
+      stepIdx++;
+      if (stepIdx < steps.length) {
+        document.getElementById('loader-text').innerText = steps[stepIdx];
+      } else {
+        clearInterval(interval);
+      }
+    }, 600);
+    
+    setTimeout(() => {
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 300);
+    }, 4200);
+  });
 });
 </script>
 </body>
