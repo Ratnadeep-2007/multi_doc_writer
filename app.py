@@ -1042,6 +1042,7 @@ def generate():
     if missing:
         return f"Missing required fields: {', '.join(missing)}", 400
 
+    folder = safe_folder_name(data["consumer_name"]) or "documents"
     mem_zip = io.BytesIO()
     with zipfile.ZipFile(mem_zip, "w", zipfile.ZIP_DEFLATED) as zf:
         for template_name in TEMPLATES:
@@ -1051,10 +1052,9 @@ def generate():
             doc.save(buf)
             fixed_bytes = dedupe_docx_bytes(buf.getvalue())
             out_name = template_name.replace("_TEMPLATE", "")
-            zf.writestr(out_name, fixed_bytes)
+            zf.writestr(f"{folder}/{out_name}", fixed_bytes)
 
     mem_zip.seek(0)
-    folder = safe_folder_name(data["consumer_name"]) or "documents"
     return send_file(
         mem_zip,
         as_attachment=True,
