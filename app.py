@@ -50,7 +50,7 @@ def dedupe_docx_bytes(data: bytes) -> bytes:
 GROUPS = [
     {
         "title": "Consumer General Info",
-        "icon": "👤",
+        "icon": "user",
         "fields": [
             {"label": "Consumer Full Name", "name": "consumer_name", "ph": "SACHIN SAHDEV GAWAND", "required": True},
             {"label": "Consumer Number", "name": "consumer_number", "ph": "023130009549", "required": True},
@@ -60,7 +60,7 @@ GROUPS = [
     },
     {
         "title": "Address Information",
-        "icon": "📍",
+        "icon": "map-pin",
         "fields": [
             {"label": "Installation Address", "name": "install_address", "ph": "H. NO. 1098, TAL. ALIBAG PEN CIRCLE,", "required": True, "full_width": True},
             {"label": "Consumer Residential Address (Annex-2 only)", "name": "consumer_residential_address", "ph": "At Post Dhokawade", "required": True, "full_width": True},
@@ -69,7 +69,7 @@ GROUPS = [
     },
     {
         "title": "Solar System Specs",
-        "icon": "☀️",
+        "icon": "sun",
         "fields": [
             {"label": "Sanctioned Capacity", "name": "sanctioned_capacity_kw", "ph": "3.3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
             {"label": "Rooftop Installed Capacity", "name": "rooftop_capacity_kw", "ph": "3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
@@ -88,7 +88,7 @@ GROUPS = [
     },
     {
         "title": "Execution & Agreement Dates",
-        "icon": "📅",
+        "icon": "calendar",
         "fields": [
             {"label": "Installation Date", "name": "installation_date", "ph": "4-June-2026", "required": True},
             {"label": "Agreement Date (DD/MM/YYYY)", "name": "agreement_date", "ph": "22/06/2026", "required": True},
@@ -97,7 +97,7 @@ GROUPS = [
     },
     {
         "title": "Vendor Credentials",
-        "icon": "🏢",
+        "icon": "building-2",
         "fields": [
             {"label": "Vendor Short Name", "name": "vendor_name", "ph": "S S Powertech", "required": True},
             {"label": "Vendor Full Name (with M/S)", "name": "vendor_name_full", "ph": "M/S S S PowerTech", "required": True},
@@ -107,7 +107,7 @@ GROUPS = [
     },
     {
         "title": "MSEDCL Subdivision (Optional)",
-        "icon": "⚡",
+        "icon": "zap",
         "fields": [
             {"label": "MSEDCL Officer Designation", "name": "officer_designation", "ph": "Deputy Executive Engineer Alibag II", "required": False, "default": "Deputy Executive Engineer Alibag II", "full_width": True},
             {"label": "Subdivision Registered Office Address", "name": "subdivision_address", "ph": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201", "required": False, "default": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201", "full_width": True},
@@ -115,7 +115,7 @@ GROUPS = [
     },
     {
         "title": "Meter Testing Letter",
-        "icon": "🔌",
+        "icon": "plug",
         "fields": [
             {"label": "Meter Serial Number", "name": "meter_serial_number", "ph": "U6541057", "required": True},
         ]
@@ -131,46 +131,31 @@ FORM_HTML = r"""
 <title>Solar Docs Generator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
 <style>
   :root {
-    --bg-primary: #080a10;
-    --bg-surface: rgba(17, 24, 43, 0.45);
-    --bg-sidebar: rgba(10, 12, 22, 0.9);
-    --border-color: rgba(255, 255, 255, 0.05);
-    --text-primary: #f8fafc;
-    --text-secondary: #64748b;
-    --accent: #6366f1;
-    --accent-glow: rgba(99, 102, 241, 0.15);
-    --accent-hover: #818cf8;
-    --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-    --card-hover-border: rgba(99, 102, 241, 0.25);
-    --success: #10b981;
-    --success-glow: rgba(16, 185, 129, 0.15);
-    --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  }
-  
-  [data-theme="cyberpunk"] {
-    --bg-primary: #050508;
-    --bg-surface: rgba(9, 24, 38, 0.45);
-    --bg-sidebar: rgba(5, 12, 20, 0.9);
-    --accent: #00f2fe;
-    --accent-glow: rgba(0, 242, 254, 0.15);
-    --accent-hover: #4facfe;
-    --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-    --card-hover-border: rgba(0, 242, 254, 0.25);
-  }
+    --bg-page:        #f7f8fa;
+    --bg-surface:      #ffffff;
+    --bg-sidebar:      #14161f;
+    --border:          #e2e4e9;
+    --border-sidebar:  rgba(255,255,255,0.08);
 
-  [data-theme="sunset"] {
-    --bg-primary: #0d0909;
-    --bg-surface: rgba(30, 16, 16, 0.45);
-    --bg-sidebar: rgba(15, 8, 8, 0.9);
-    --accent: #f59e0b;
-    --accent-glow: rgba(245, 158, 11, 0.15);
-    --accent-hover: #fbbf24;
-    --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
-    --card-hover-border: rgba(245, 158, 11, 0.25);
+    --text-primary:    #14161f;
+    --text-secondary:  #6b7280;
+    --text-on-dark:    #f4f5f7;
+    --text-on-dark-secondary: #9497a5;
+
+    --accent:          #4f46e5;
+    --accent-hover:    #4338ca;
+    --accent-soft:     #eef0fd;
+
+    --success:         #16a34a;
+    --danger:          #dc2626;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   }
   
   * {
@@ -181,11 +166,7 @@ FORM_HTML = r"""
   
   body {
     font-family: var(--font-sans);
-    background: var(--bg-primary);
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.05) 0px, transparent 50%);
-    background-attachment: fixed;
+    background: var(--bg-page);
     color: var(--text-primary);
     min-height: 100vh;
     display: flex;
@@ -201,12 +182,10 @@ FORM_HTML = r"""
 
   /* Sidebar Design */
   .sidebar {
-    width: 320px;
+    width: 280px;
     background: var(--bg-sidebar);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-right: 1px solid var(--border-color);
-    padding: 40px 24px;
+    border-right: 1px solid var(--border-sidebar);
+    padding: 32px 20px;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -219,84 +198,71 @@ FORM_HTML = r"""
   .sidebar-logo {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 40px;
+    gap: 8px;
+    margin-bottom: 32px;
   }
 
   .logo-icon {
-    font-size: 1.8rem;
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 10px var(--accent-glow));
+    font-size: 1.4rem;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .logo-text {
-    font-family: 'Outfit', sans-serif;
-    font-size: 1.6rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    font-weight: 750;
+    letter-spacing: -0.3px;
+    color: var(--text-on-dark);
   }
 
   .sidebar-progress {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 32px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-sidebar);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 24px;
   }
 
   .progress-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
-    font-size: 0.85rem;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
   }
 
   .progress-label {
-    color: var(--text-secondary);
+    color: var(--text-on-dark-secondary);
     font-weight: 500;
   }
 
   .progress-pct {
-    font-weight: 700;
-    color: var(--accent-hover);
+    font-weight: 600;
+    color: var(--text-on-dark);
   }
 
   .progress-track {
     width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
     overflow: hidden;
   }
 
   .progress-bar {
     height: 100%;
-    background: var(--accent-gradient);
-    border-radius: 3px;
-    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 10px var(--accent-hover);
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
   }
 
   .sidebar-nav {
     flex: 1;
     overflow-y: auto;
     margin-bottom: 24px;
-    padding-right: 4px;
-  }
-
-  .sidebar-nav::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .sidebar-nav::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 2px;
   }
 
   .sidebar-nav ul {
@@ -306,154 +272,124 @@ FORM_HTML = r"""
   .nav-item {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
-    border-radius: 10px;
-    margin-bottom: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 4px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
-    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    color: var(--text-on-dark-secondary);
+    border-left: 2px solid transparent;
   }
 
   .nav-item:hover {
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-on-dark);
   }
 
   .nav-item.active {
-    background: var(--accent-glow);
-    border-color: rgba(99, 102, 241, 0.15);
-    color: var(--text-primary);
+    background: rgba(79, 70, 229, 0.12);
+    border-left-color: var(--accent);
+    color: var(--text-on-dark);
   }
 
   .nav-icon {
-    font-size: 1.1rem;
-    margin-right: 12px;
+    display: inline-flex;
+    align-items: center;
+    margin-right: 10px;
+    color: inherit;
+  }
+  
+  .nav-icon svg {
+    width: 16px;
+    height: 16px;
   }
 
   .nav-title {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
   }
 
   .nav-status-badge {
     margin-left: auto;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.1);
-    transition: all 0.2s ease;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--text-on-dark-secondary);
+    transition: background-color 0.2s ease;
   }
 
   .nav-status-badge.complete {
-    color: var(--success);
-    font-weight: bold;
-    text-shadow: 0 0 8px var(--success);
+    background-color: var(--success);
   }
 
   .sidebar-footer {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
+    border-top: 1px solid var(--border-sidebar);
+    padding-top: 16px;
   }
 
   .btn-sample-load {
-    background: var(--accent-gradient);
-    border: none;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 10px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     font-family: inherit;
-    box-shadow: 0 4px 15px var(--accent-glow);
+    text-align: center;
   }
 
   .btn-sample-load:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    background: var(--accent-soft);
   }
 
   .btn-clear-data {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    padding: 12px 20px;
-    border-radius: 10px;
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     font-family: inherit;
-    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.05);
+    text-align: center;
   }
 
   .btn-clear-data:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: #ef4444;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.15);
+    background: rgba(220, 38, 38, 0.05);
   }
-
-  .theme-picker {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 8px;
-  }
-
-  .theme-dot {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .theme-dot:hover {
-    transform: scale(1.15);
-  }
-
-  .theme-dot.active {
-    border-color: var(--text-primary);
-  }
-
-  .theme-indigo { background: #6366f1; }
-  .theme-cyberpunk { background: #00f2fe; }
-  .theme-sunset { background: #f59e0b; }
 
   /* Main Content Layout */
   .main-content {
-    margin-left: 320px;
+    margin-left: 280px;
     flex: 1;
-    padding: 60px 80px;
-    max-width: 1100px;
-    width: calc(100% - 320px);
+    padding: 48px 48px;
+    max-width: 840px;
+    width: calc(100% - 280px);
   }
 
   .app-header {
-    margin-bottom: 48px;
+    margin-bottom: 32px;
   }
 
   .app-header h1 {
-    font-family: 'Outfit', sans-serif;
-    font-size: 3rem;
-    font-weight: 850;
-    letter-spacing: -1px;
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 8px;
-    display: inline-block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+    margin-bottom: 6px;
   }
 
   .app-header .subtitle {
     color: var(--text-secondary);
-    font-size: 1.15rem;
+    font-size: 0.95rem;
     font-weight: 400;
   }
 
@@ -461,45 +397,44 @@ FORM_HTML = r"""
   form {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 24px;
   }
 
   .card {
     background: var(--bg-surface);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 36px;
-    box-shadow: var(--shadow);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    scroll-margin-top: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    transition: border-color 0.15s ease;
+    scroll-margin-top: 24px;
   }
 
-  .card:hover {
-    border-color: var(--card-hover-border);
-    box-shadow: 0 20px 45px -15px var(--accent-glow);
-    transform: translateY(-2px);
+  .card:focus-within {
+    border-color: var(--accent);
   }
 
   .card-title {
-    font-family: 'Outfit', sans-serif;
-    font-size: 1.35rem;
-    font-weight: 700;
-    margin-bottom: 28px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 20px;
     color: var(--text-primary);
     display: flex;
     align-items: center;
-    gap: 10px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 16px;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  .card-title svg {
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
   }
 
   .grid-fields {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px;
   }
 
   .grid-2 {
@@ -515,7 +450,7 @@ FORM_HTML = r"""
   .field-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   .span-2 {
@@ -528,30 +463,31 @@ FORM_HTML = r"""
     }
   }
 
+  .full-width-section {
+    width: 100%;
+  }
+
   label {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-primary);
-    display: flex;
-    align-items: center;
   }
 
   .required-asterisk {
-    color: #ef4444;
-    margin-left: 3px;
-    font-size: 0.9rem;
+    color: var(--danger);
+    margin-left: 2px;
   }
 
   /* Form Elements Control */
   input, select {
-    background: rgba(10, 12, 22, 0.5);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 12px 16px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
     color: var(--text-primary);
     font-family: inherit;
-    font-size: 0.95rem;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.85rem;
+    transition: all 0.15s ease;
   }
 
   input {
@@ -560,64 +496,62 @@ FORM_HTML = r"""
 
   select {
     cursor: pointer;
-    min-width: 90px;
+    min-width: 80px;
   }
 
   option {
-    background: #0f121d;
+    background: var(--bg-surface);
     color: var(--text-primary);
   }
 
   input::placeholder {
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--text-secondary);
+    opacity: 0.5;
   }
 
   input:focus, select:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-    background: rgba(10, 12, 22, 0.8);
+    box-shadow: 0 0 0 3px var(--accent-soft);
   }
 
   .hint-text {
     font-size: 0.75rem;
     color: var(--text-secondary);
-    font-weight: 500;
   }
 
   .submit-container {
-    text-align: center;
-    margin-top: 16px;
+    text-align: left;
+    margin-top: 8px;
   }
 
   .btn-primary {
-    background: var(--accent-gradient);
-    border: none;
+    background: var(--accent);
+    border: 1px solid var(--accent);
     color: white;
-    padding: 18px 48px;
-    font-size: 1.15rem;
-    font-weight: 700;
-    border-radius: 14px;
+    padding: 14px 28px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    box-shadow: 0 10px 25px var(--accent-glow);
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     font-family: inherit;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
 
   .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.45);
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
   }
 
   .btn-primary:active {
-    transform: translateY(0);
+    transform: none;
   }
 
   footer {
-    text-align: center;
+    text-align: left;
     margin-top: 48px;
     color: var(--text-secondary);
     font-size: 0.85rem;
@@ -631,48 +565,47 @@ FORM_HTML = r"""
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(6, 8, 14, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: rgba(20, 22, 31, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 1000;
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.25s ease;
   }
   
   .loader-card {
     background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 24px;
-    padding: 48px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 32px;
     text-align: center;
-    box-shadow: 0 30px 60px -10px rgba(0, 0, 0, 0.7);
-    max-width: 380px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    max-width: 340px;
     width: 90%;
   }
   
   .spinner {
-    width: 64px;
-    height: 64px;
-    border: 4px solid rgba(255, 255, 255, 0.05);
-    border-top: 4px solid var(--accent);
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--border);
+    border-top: 3px solid var(--accent);
     border-radius: 50%;
-    animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-    margin: 0 auto 28px;
-    box-shadow: 0 0 20px var(--accent-glow);
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
   }
   
   .loader-card h3 {
-    font-family: 'Outfit', sans-serif;
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 8px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-primary);
   }
 
   .loader-card p {
     color: var(--text-secondary);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
   }
 
   @keyframes spin {
@@ -691,18 +624,18 @@ FORM_HTML = r"""
       height: auto;
       position: relative;
       border-right: none;
-      border-bottom: 1px solid var(--border-color);
-      padding: 32px 24px;
+      border-bottom: 1px solid var(--border-sidebar);
+      padding: 24px;
     }
     
     .main-content {
       margin-left: 0;
       width: 100%;
-      padding: 40px 24px;
+      padding: 32px 24px;
     }
     
     .app-header h1 {
-      font-size: 2.2rem;
+      font-size: 1.5rem;
     }
   }
 </style>
@@ -712,14 +645,14 @@ FORM_HTML = r"""
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-icon">☀️</span>
+      <span class="logo-icon"><i data-lucide="sun"></i></span>
       <span class="logo-text">Solar Docs</span>
     </div>
     
     <!-- Progress Indicator -->
     <div class="sidebar-progress">
       <div class="progress-info">
-        <span class="progress-label">Completion Status</span>
+        <span class="progress-label">Form Progress</span>
         <span class="progress-pct" id="progress-pct">0%</span>
       </div>
       <div class="progress-track">
@@ -732,28 +665,22 @@ FORM_HTML = r"""
       <ul>
         {% for group in groups %}
           <li class="nav-item" data-section="{{ loop.index0 }}" onclick="scrollToSection('card-section-{{ loop.index0 }}')">
-            <span class="nav-icon">{{ group.icon }}</span>
+            <span class="nav-icon"><i data-lucide="{{ group.icon }}"></i></span>
             <span class="nav-title">{{ group.title }}</span>
-            <span class="nav-status-badge" id="badge-{{ loop.index0 }}">●</span>
+            <span class="nav-status-badge" id="badge-{{ loop.index0 }}"></span>
           </li>
         {% endfor %}
       </ul>
     </nav>
     
-    <!-- Theme & Quick Actions -->
+    <!-- Quick Actions -->
     <div class="sidebar-footer">
       <button type="button" class="btn-sample-load" onclick="fillSampleData()">
-        ⚡ Load Sachin Gawand Sample
+        Load Sample Data
       </button>
       <button type="button" class="btn-clear-data" onclick="clearData()">
-        🗑️ Clear Form Data
+        Clear Form Data
       </button>
-      
-      <div class="theme-picker">
-        <button type="button" class="theme-dot theme-indigo active" onclick="setTheme('indigo')" title="Indigo Cosmic"></button>
-        <button type="button" class="theme-dot theme-cyberpunk" onclick="setTheme('cyberpunk')" title="Cyberpunk Neon"></button>
-        <button type="button" class="theme-dot theme-sunset" onclick="setTheme('sunset')" title="Sunset Flame"></button>
-      </div>
     </div>
   </aside>
   
@@ -761,13 +688,13 @@ FORM_HTML = r"""
   <main class="main-content">
     <header class="app-header">
       <h1>Solar Docs Auto-Fill</h1>
-      <p class="subtitle">Enter customer details once to auto-generate all 7 project installation documents</p>
+      <p class="subtitle">Fill the form once to generate all 7 solar installation documents</p>
     </header>
     
     <form method="POST" action="/generate" id="docs-form">
       {% for group in groups %}
         <div class="card {% if group.title in ['Solar System Specs', 'Address Information', 'MSEDCL Subdivision (Optional)'] %}full-width-section{% endif %}" id="card-section-{{ loop.index0 }}">
-          <h2 class="card-title">{{ group.icon }} {{ group.title }}</h2>
+          <h2 class="card-title"><i data-lucide="{{ group.icon }}"></i> {{ group.title }}</h2>
           <div class="grid-fields {% if group.title in ['Consumer General Info', 'Solar System Specs', 'Execution & Agreement Dates'] %}grid-2{% endif %}">
             {% for field in group.fields %}
               <div class="field-wrapper {% if field.full_width %}span-2{% endif %}">
@@ -814,7 +741,7 @@ FORM_HTML = r"""
       
       <div class="submit-container">
         <button type="submit" class="btn-primary">
-          📥 Generate & Download ZIP Package
+          Generate & Download ZIP
         </button>
       </div>
     </form>
@@ -907,7 +834,6 @@ function clearData() {
     inputs.forEach(input => {
       input.value = "";
     });
-    // Set selects back to first option
     const selects = document.querySelectorAll('#docs-form select');
     selects.forEach(select => {
       select.selectedIndex = 0;
@@ -922,19 +848,6 @@ function scrollToSection(id) {
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-}
-
-// Theme Setting Function
-function setTheme(themeName) {
-  document.documentElement.setAttribute('data-theme', themeName);
-  document.querySelectorAll('.theme-dot').forEach(dot => {
-    dot.classList.remove('active');
-  });
-  const activeDot = document.querySelector(`.theme-${themeName}`);
-  if (activeDot) {
-    activeDot.classList.add('active');
-  }
-  localStorage.setItem('solar-docs-theme', themeName);
 }
 
 // Progress and Status calculation
@@ -965,10 +878,8 @@ function updateProgress() {
     const badge = document.getElementById(`badge-${idx}`);
     if (badge) {
       if (groupRequiredCount === 0 || groupFilled) {
-        badge.innerHTML = "✓";
         badge.className = "nav-status-badge complete";
       } else {
-        badge.innerHTML = "●";
         badge.className = "nav-status-badge";
       }
     }
@@ -980,9 +891,8 @@ function updateProgress() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Restore theme
-  const savedTheme = localStorage.getItem('solar-docs-theme') || 'indigo';
-  setTheme(savedTheme);
+  // Initialize Lucide icons
+  lucide.createIcons();
 
   const countInput = document.getElementById("pv_module_count");
   const wattInput = document.getElementById("module_wattage");
