@@ -71,15 +71,15 @@ GROUPS = [
         "title": "Solar System Specs",
         "icon": "☀️",
         "fields": [
-            {"label": "Sanctioned Capacity (KW)", "name": "sanctioned_capacity_kw", "ph": "3.3", "required": True},
-            {"label": "Rooftop Installed Capacity (KW)", "name": "rooftop_capacity_kw", "ph": "3", "required": True},
+            {"label": "Sanctioned Capacity", "name": "sanctioned_capacity_kw", "ph": "3.3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
+            {"label": "Rooftop Installed Capacity", "name": "rooftop_capacity_kw", "ph": "3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
             {"label": "Sanction Number (with date)", "name": "sanction_number", "ph": "4138/ALIBAG-II/75755227 Date:17-Jul-2026", "required": True, "full_width": True},
             {"label": "PV Solar Panel Module Count", "name": "pv_module_count", "ph": "6", "required": True},
-            {"label": "Solar Panel Module Wattage (W)", "name": "module_wattage", "ph": "550", "required": True},
+            {"label": "Solar Panel Module Wattage", "name": "module_wattage", "ph": "550", "required": True, "unit_choices": ["WP", "W", "Wp"], "unit_default": "WP"},
             {"label": "Solar Panel Module Capacity (Watt, Auto-calculated)", "name": "module_capacity_watt", "ph": "3300", "required": False, "full_width": True},
             {"label": "Solar Panel Module Make / Manufacturer", "name": "module_make", "ph": "Waaree India pvt ltd", "required": True},
             {"label": "ALMM Model Number", "name": "almm_model_number", "ph": "AE14HXXXVHC10B", "required": True},
-            {"label": "Inverter Capacity (KW)", "name": "inverter_capacity_kw", "ph": "3.3", "required": True},
+            {"label": "Inverter Capacity", "name": "inverter_capacity_kw", "ph": "3.3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
             {"label": "Inverter Make / Manufacturer", "name": "inverter_make", "ph": "Polycab Solar Pvt. Ltd", "required": True},
             {"label": "Inverter Model / Rating", "name": "inverter_model", "ph": "Vs-502s", "required": True},
             {"label": "MPPT / Charge Controller Count", "name": "mppt_count", "ph": "1", "required": True},
@@ -122,7 +122,7 @@ GROUPS = [
     }
 ]
 
-FORM_HTML = """
+FORM_HTML = r"""
 <!doctype html>
 <html lang="en">
 <head>
@@ -291,7 +291,7 @@ FORM_HTML = """
     margin-left: 2px;
   }
   
-  input {
+  input, select {
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
@@ -300,14 +300,27 @@ FORM_HTML = """
     font-family: inherit;
     font-size: 0.95rem;
     transition: all 0.2s ease;
+  }
+  
+  input {
     width: 100%;
+  }
+  
+  select {
+    cursor: pointer;
+    min-width: 90px;
+  }
+  
+  option {
+    background: #0f172a;
+    color: var(--text-primary);
   }
   
   input::placeholder {
     color: rgba(255, 255, 255, 0.25);
   }
   
-  input:focus {
+  input:focus, select:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
@@ -382,14 +395,36 @@ FORM_HTML = """
                 {{ field.label }}
                 {% if field.required %}<span class="required-asterisk">*</span>{% endif %}
               </label>
-              <input 
-                type="text" 
-                id="{{ field.name }}" 
-                name="{{ field.name }}" 
-                placeholder="{{ field.ph }}" 
-                {% if field.default %}value="{{ field.default }}"{% endif %}
-                {% if field.required %}required{% endif %}
-              >
+              {% if field.unit_choices %}
+                <div style="display: flex; gap: 8px; width: 100%;">
+                  <input 
+                    type="text" 
+                    id="{{ field.name }}" 
+                    name="{{ field.name }}" 
+                    placeholder="{{ field.ph }}" 
+                    {% if field.default %}value="{{ field.default }}"{% endif %}
+                    {% if field.required %}required{% endif %}
+                    style="flex: 1;"
+                  >
+                  <select 
+                    name="{{ field.name }}_unit" 
+                    id="{{ field.name }}_unit"
+                  >
+                    {% for choice in field.unit_choices %}
+                      <option value="{{ choice }}" {% if choice == field.unit_default %}selected{% endif %}>{{ choice }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              {% else %}
+                <input 
+                  type="text" 
+                  id="{{ field.name }}" 
+                  name="{{ field.name }}" 
+                  placeholder="{{ field.ph }}" 
+                  {% if field.default %}value="{{ field.default }}"{% endif %}
+                  {% if field.required %}required{% endif %}
+                >
+              {% endif %}
               <span class="hint-text">e.g. {{ field.ph }}</span>
             </div>
           {% endfor %}
@@ -509,12 +544,30 @@ def generate():
     if data.get("pv_module_count") and data.get("module_wattage"):
         try:
             count = int(data["pv_module_count"])
+            # Format and convert values based on units before rendering
+            for group in GROUPS:
+                for field in group["fields"]:
+                    name = field["name"]
+                    if field.get("unit_choices"):
+                        val = data[name]
+                        unit = request.form.get(f"{name}_unit", "").strip()
+                        if name == "module_wattage":
+                            watt_match = re.search(r"\d+", val)
+                            if watt_match:
+                                data[name] = f"{watt_match.group(0)} {unit}"
+                        elif name in ["sanctioned_capacity_kw", "rooftop_capacity_kw", "inverter_capacity_kw"]:
+                            num_match = re.search(r"[\d\.]+", val)
+                            if num_match:
+                                num_val = float(num_match.group(0))
+                                if unit.lower() == "w":
+                                    num_val = num_val / 1000.0
+                                data[name] = f"{num_val:g}"
+
+            # Auto-calculate panel capacity in Watt (count * wattage number)
             watt_match = re.search(r"\d+", str(data["module_wattage"]))
             if watt_match and count > 0:
                 watt_val = int(watt_match.group(0))
                 data["module_capacity_watt"] = str(count * watt_val)
-                # Clean module_wattage to only be the number, so the template appends WP
-                data["module_wattage"] = str(watt_val)
         except Exception:
             pass
 

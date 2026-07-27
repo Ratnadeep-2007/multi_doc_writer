@@ -80,12 +80,29 @@ def load_input(path: str) -> dict:
     if "pv_module_count" in data and "module_wattage" in data:
         try:
             count = int(data["pv_module_count"])
-            watt_match = re.search(r"\d+", str(data["module_wattage"]))
+            # Format and convert values based on units before rendering
+            for cap_field in ["sanctioned_capacity_kw", "rooftop_capacity_kw", "inverter_capacity_kw"]:
+                if cap_field in data:
+                    val_str = str(data[cap_field]).strip()
+                    num_match = re.search(r"[\d\.]+", val_str)
+                    if num_match:
+                        num_val = float(num_match.group(0))
+                        unit_match = re.search(r"[a-zA-Z]+$", val_str)
+                        unit = unit_match.group(0) if unit_match else data.get(f"{cap_field}_unit", "kW").strip()
+                        if unit.lower() == "w":
+                            num_val = num_val / 1000.0
+                        data[cap_field] = f"{num_val:g}"
+
+            # Format module_wattage with unit
+            watt_str = str(data["module_wattage"]).strip()
+            watt_match = re.search(r"\d+", watt_str)
             if watt_match and count > 0:
                 watt_val = int(watt_match.group(0))
+                # Check unit
+                unit_match = re.search(r"[a-zA-Z]+$", watt_str)
+                unit = unit_match.group(0) if unit_match else data.get("module_wattage_unit", "WP").strip()
                 data["module_capacity_watt"] = str(count * watt_val)
-                # Clean module_wattage to only be the number, so the template appends WP
-                data["module_wattage"] = str(watt_val)
+                data["module_wattage"] = f"{watt_val} {unit}"
         except Exception:
             pass
 
