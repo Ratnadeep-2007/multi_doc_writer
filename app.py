@@ -352,7 +352,7 @@ FORM_HTML = r"""
   .sidebar-footer {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
   .btn-sample-load {
@@ -372,6 +372,27 @@ FORM_HTML = r"""
   .btn-sample-load:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+  }
+
+  .btn-clear-data {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.05);
+  }
+
+  .btn-clear-data:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.15);
   }
 
   .theme-picker {
@@ -724,6 +745,9 @@ FORM_HTML = r"""
       <button type="button" class="btn-sample-load" onclick="fillSampleData()">
         ⚡ Load Sachin Gawand Sample
       </button>
+      <button type="button" class="btn-clear-data" onclick="clearData()">
+        🗑️ Clear Form Data
+      </button>
       
       <div class="theme-picker">
         <button type="button" class="theme-dot theme-indigo active" onclick="setTheme('indigo')" title="Indigo Cosmic"></button>
@@ -873,6 +897,22 @@ function autoCalcModuleCapacity() {
     if (count > 0 && watt > 0) {
       capacityInput.value = (count * watt).toString();
     }
+  }
+}
+
+// Clear Data function
+function clearData() {
+  if (confirm("Are you sure you want to clear all form fields?")) {
+    const inputs = document.querySelectorAll('#docs-form input[type="text"]');
+    inputs.forEach(input => {
+      input.value = "";
+    });
+    // Set selects back to first option
+    const selects = document.querySelectorAll('#docs-form select');
+    selects.forEach(select => {
+      select.selectedIndex = 0;
+    });
+    updateProgress();
   }
 }
 
