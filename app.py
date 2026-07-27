@@ -703,7 +703,7 @@ FORM_HTML = r"""
                   {% if field.required %}<span class="required-asterisk">*</span>{% endif %}
                 </label>
                 {% if field.unit_choices %}
-                  <div style="display: flex; gap: 8px; width: 100%;">
+                  <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
                     <input 
                       type="text" 
                       id="{{ field.name }}" 
@@ -713,14 +713,8 @@ FORM_HTML = r"""
                       {% if field.required %}required{% endif %}
                       style="flex: 1;"
                     >
-                    <select 
-                      name="{{ field.name }}_unit" 
-                      id="{{ field.name }}_unit"
-                    >
-                      {% for choice in field.unit_choices %}
-                        <option value="{{ choice }}" {% if choice == field.unit_default %}selected{% endif %}>{{ choice }}</option>
-                      {% endfor %}
-                    </select>
+                    <input type="hidden" name="{{ field.name }}_unit" value="{{ field.unit_default }}">
+                    <span class="field-unit-label" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); min-width: 24px; text-align: left;">{{ field.unit_default }}</span>
                   </div>
                 {% else %}
                   <input 
@@ -834,10 +828,6 @@ function clearData() {
     inputs.forEach(input => {
       input.value = "";
     });
-    const selects = document.querySelectorAll('#docs-form select');
-    selects.forEach(select => {
-      select.selectedIndex = 0;
-    });
     updateProgress();
   }
 }
@@ -900,7 +890,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (wattInput) wattInput.addEventListener("input", autoCalcModuleCapacity);
   
   // Track input to update progress
-  const inputs = document.querySelectorAll('input, select');
+  const inputs = document.querySelectorAll('input');
   inputs.forEach(input => {
     input.addEventListener('input', updateProgress);
     input.addEventListener('change', updateProgress);
