@@ -1,6 +1,6 @@
 # Session Checkpoint: Solar Docs Automation
 
-**Date**: 2026-07-26  
+**Date**: 2026-07-27  
 **Repository**: [Ratnadeep-2007/multi_doc_writer](https://github.com/Ratnadeep-2007/multi_doc_writer)  
 **Branch**: `main`
 
@@ -8,15 +8,13 @@
 
 ## 🎯 Recent Milestones & System Status
 
-- [x] **Expanded Template Suite (5 $\rightarrow$ 7 Docs)**: Added `WorkCompletionReport_TEMPLATE.docx` and `MeterTestingLetter_TEMPLATE.docx`.
-- [x] **Auto-Calculated Panel Capacity**: Implemented real-time dynamic calculation of Total Solar Panel Capacity ($\text{Panel Count} \times \text{Panel Wattage} = \text{Capacity in Watt}$) across frontend JS, Flask backend, and CLI runner.
-- [x] **Unit & Terminology Standardizations**: Converted `module_capacity_kw` to `module_capacity_watt` and updated terminology from "Module" to **"Solar Panel Module"** across all form labels, templates, and documentation.
-- [x] **Un-highlighted Clean Rendering**: Removed all `<w:highlight>` XML tags from Word templates. All 7 output documents render with zero yellow background shading (`highlight_count = 0`).
-- [x] **Field Streamlining & Form Consolidation**: Removed redundant fields (`capacity_kw_compact`, `total_capacity_kwp_note`) and merged the "Work Completion Report" fields into the **Solar System Specs** card.
-- [x] **1-to-1 Field Alignment**: Verified 30 unique non-redundant fields across all 7 templates, `generate_docs.py`, and `app.py`.
-- [x] **Unit-Free Input Fields**: Updated `WorkCompletionReport_TEMPLATE.docx` to have `{{ module_wattage }} WP` unit suffix directly in layout, updated form placeholder and label, and sanitized suffix string in Python scripts.
+- [x] **Premium Split-Dashboard Restyling (Design Spec v2)**: Swapped the heavy space-slate dark glassmorphism theme for a clean, professional utility interface using flat cards, a grayscale color system (with a dark sidebar), standard Inter typography, and crisp Lucide vector icons.
+- [x] **Clear Form Data Action**: Added a destructively styled "Clear Form Data" button in the sidebar footer with a confirmation dialog.
+- [x] **Dynamic Unit Dropdowns**: Implemented unit choice selectors (`kW`/`W` and `WP`/`W`/`Wp`) next to capacities and panel wattage inputs.
+- [x] **Smart Unit Conversion & Sanitization**: Implemented backend parsing to convert Watts (W) to Kilowatts (kW) automatically for capacity inputs, and strip manual text unit suffixes to avoid duplicates in rendered templates.
+- [x] **Nested ZIP Package Structure**: Modified the ZIP generation to store files inside a parent folder (named after the consumer) within the archive, preventing document scatter upon extraction.
+- [x] **GitHub Integration**: Committed and pushed all layout, script, and documentation updates to `origin/main`.
 - [x] **Empirical Verification**: `python verify_rendered.py` passed with **0 unresolved Jinja placeholders** across all sample generated outputs.
-- [x] **GitHub Push**: Committed and pushed all updates to `origin/main`.
 
 ---
 

@@ -30,30 +30,31 @@
   * `{{ sanctioned_capacity_kw }}KW`
   * `{{ sanctioned_capacity_kw }}KW ({{ module_capacity_watt }} / 1000 = {{ sanctioned_capacity_kw }})`
 
-### 6. Suffix and Unit Sanitization (Unit-Free Input Fields)
-* **Goal**: Enable the user to enter only numeric digits for solar panel capacity and inverter capacity without manual text units like "KW", "W", "WP".
+### 6. Suffix, Unit Dropdowns & Smart Conversion
+* **Goal**: Provide flexibility in unit selection next to capacities (`kW`, `W`) and module wattage (`WP`, `W`, `Wp`) inputs, while ensuring the engine receives clean numeric data and correct conversions.
 * **Implementation**:
-  * Added the `WP` unit suffix directly inside the `WorkCompletionReport_TEMPLATE.docx` layout file (`{{ module_wattage }} WP`).
-  * Updated `app.py` and `generate_docs.py` to automatically strip any trailing alphabetic units (e.g. `WP`, `W`) if entered by the user, ensuring clean numeric values are sent to the templating engine.
-  * Changed the web form UI label and placeholder for the solar module wattage to guide the user to input only numbers (e.g. `550`).
+  * Added dynamic dropdown selectors to input fields in the UI.
+  * In the backend and CLI (`app.py` and `generate_docs.py`), any user-typed trailing unit suffixes are stripped via regex.
+  * If a capacity value is submitted in Watts (`W` or `w`) instead of Kilowatts (`kW`), the system automatically divides the value by `1000` to convert it to standard Kilowatts format (required by hardcoded net-metering layout formulas).
+
+### 7. ZIP Archive Folder Nesting
+* **Rationale**: To prevent extracted files from scattering and cluttering the user's local target directory upon extraction.
+* **Implementation**:
+  * Generated documents are placed inside a parent folder (named after the consumer, e.g. `SACHIN_SAHDEV_GAWAND/`) within the downloadable ZIP archive.
 
 ---
 
 ## 🎨 UI/UX Design System
 
-* **Theme**: Deep space slate-indigo dark mode with glassmorphic cards.
-* **Consolidated Card Groups**: Form fields are organized into 5 logical groups:
-  1. `Consumer General Info` (Name, Consumer #, Mobile, Email)
-  2. `Address Information` (Install Address, Residential Address, Suffix)
-  3. `Solar System Specs` (Consolidated hardware specs: Capacities, Sanction #, Panel Count, Panel Wattage, ALMM #, Inverter Make, Inverter Model / Rating, MPPT Count, Year of Mfg)
-  4. `Execution & Agreement Dates` (Installation Date, Agreement Date, Execution Text)
-  5. `Vendor Credentials` (Vendor Short/Full Name, Registered Address)
-  6. `MSEDCL Subdivision (Optional)` (Officer Designation, Subdivision Address)
-  7. `Meter Testing Letter` (Meter Serial #)
+* **Theme**: Flat utility style (Design Spec v2) featuring a clean light-grey page canvas (`#f7f8fa`), solid white card surfaces, a dark sidebar (`#14161f`), and a single focused indigo accent (`#4f46e5`).
+* **Icons**: Swapped emojis for standard Lucide vector icons (`user`, `map-pin`, `sun`, `calendar`, `building-2`, `zap`, `plug`) rendered via CDN.
+* **Density & Scan-ability**: Reduced card padding, card hover-lift animations, and text gradient decorations to focus strictly on paperwork efficiency.
+* **Validation**: Small solid dot indicators in the sidebar turn green dynamically when a card's required fields are fully filled in.
+* **Actions**: Includes outlines for loading sample data, a red outline clear button (with confirmation alerts) to wipe form states, and a streamlined loader spinner modal.
 
 ---
 
 ## 📝 Document-to-Field Mapping Summary
 
 * **Total unique fields**: 30 non-redundant fields.
-* **Full Mapping Table**: Refer to [README.md](file:///R:/multi_doc_writer/README.md) for full field descriptions and template usage.
+* **Full Mapping Table**: Refer to [README.md](file:///E:/webstack/Auto_Application_Deep/Auto_Application_Deep/multi_doc_writer/README.md) for full field descriptions and template usage.
