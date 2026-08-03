@@ -167,3 +167,108 @@ This script unzips the generated files in `output/` and scans their XML source c
 ## 🤝 Support & Extending the Code
 * To add a new document to the generation batch, simply save it in the `templates/` folder and append its filename to the `TEMPLATES` list in `app.py` and `generate_docs.py`.
 * Ensure that any new Jinja placeholders are added to the input fields mapping in both scripts.
+
+---
+
+## 🌐 cPanel / CloudLinux Deployment Guide
+
+Follow these steps to deploy this Flask application on a cPanel-hosted domain or subdomain (e.g., `autodocumentation.sspowertech.com`):
+
+### 1. File Upload Setup
+Upload only the necessary production files to your subdomain root directory (e.g., `/home/sspowertech/autodocumentation.sspowertech.com/`). Do **not** upload `node_modules`, python local environments, or zip backups.
+
+**Files to upload:**
+*   `app.py` (Flask main application)
+*   `passenger_wsgi.py` (cPanel WSGI loader)
+*   `requirements.txt` (Dependencies list)
+*   `templates/` (Your Word `.docx` templates)
+*   `doc/` and `originals/` (Optional reference files)
+
+---
+
+### 2. cPanel Python App Setup
+1. Log in to your **cPanel** dashboard.
+2. Search for and open **"Setup Python App"**.
+3. Click **"Create Application"** and configure:
+   * **Python Version**: `3.10`
+   * **Application root**: `autodocumentation.sspowertech.com` (this must match the directory name)
+   * **Application URL**: Select `autodocumentation.sspowertech.com` from your domains dropdown.
+   * **Application startup file**: `passenger_wsgi.py`
+   * **Application Entry point**: `application` (all lowercase, matching the variable in your loader script)
+4. Click **"Create"**.
+
+---
+
+### 3. Dependency Installation
+1. Scroll down to the **"Configuration files"** section of your Python App page in cPanel.
+2. Add `requirements.txt` to the textbox and click **Add** (if it isn't automatically showing).
+3. Click **"Run pip install"** and select `requirements.txt`.
+   * *This installs Flask and docxtpl in the virtual environment.*
+4. Click **Restart** at the top of the Setup page.
+
+---
+
+### 4. Configuration Files Reference
+
+#### A. Subdomain `.htaccess`
+cPanel will automatically generate or write to `.htaccess` in your subdomain root. Ensure it contains the following Passenger instructions:
+```apache
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/sspowertech/autodocumentation.sspowertech.com"
+PassengerBaseURI "/"
+PassengerPython "/home/sspowertech/virtualenv/autodocumentation.sspowertech.com/3.10/bin/python"
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION BEGIN
+<IfModule Litespeed>
+</IfModule>
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION END
+```
+
+#### B. `passenger_wsgi.py`
+This loader file binds your Flask application (`app.py`) to the Passenger web server. It also writes tracebacks to `passenger_error.log` if the application fails to start:
+```python
+import os
+import sys
+
+# Add application directory to the system path
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, APP_DIR)
+
+# Import the Flask application object and catch errors for diagnostic log
+try:
+    from app import app as flask_app
+except Exception as e:
+    with open(os.path.join(APP_DIR, 'passenger_error.log'), 'w') as f:
+        import traceback
+        traceback.print_exc(file=f)
+    raise e
+
+# Middleware to handle subdirectory prefix routing
+SUBDIRECTORY_PREFIX = ''
+
+class PrefixMiddleware:
+    def __init__(self, wsgi_app, prefix=''):
+        self.wsgi_app = wsgi_app
+        self.prefix = prefix
+
+    def __call__(self, environ, start_response):
+        path_info = environ.get('PATH_INFO', '')
+        if path_info.startswith(self.prefix):
+            environ['PATH_INFO'] = path_info[len(self.prefix):]
+            environ['SCRIPT_NAME'] = self.prefix
+        return self.wsgi_app(environ, start_response)
+
+if SUBDIRECTORY_PREFIX:
+    application = PrefixMiddleware(flask_app, prefix=SUBDIRECTORY_PREFIX)
+else:
+    application = flask_app
+```
+
+---
+
+### 5. Troubleshooting
+* **500 Internal Server Error (No log file)**: If you get a 500 error and no `passenger_error.log` is generated, it means Python is failing to start entirely. Ensure the path in `PassengerPython` inside `.htaccess` exists and points to a valid virtualenv binary.
+* **500 Internal Server Error (With log file)**: If a `passenger_error.log` is created in your directory, check it for tracebacks (such as missing packages). Run the `pip install` action again inside your cPanel Python Setup page.
+* **Web Server Errors (PHP / Static conflicts)**: Ensure that your Passenger configurations are only kept inside the subdomain `.htaccess` file, and not duplicated or conflicted in the parent account root directory (`/home/sspowertech/.htaccess`).
+
