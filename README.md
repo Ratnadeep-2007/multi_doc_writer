@@ -88,7 +88,7 @@ Make sure you have **Python 3.9+** installed on your system.
 You can use either the Web Application (recommended for everyday use) or the CLI Script (recommended for automation).
 
 ### Quick Automated Startup (Windows Only)
-* **To run the Web Form**: Double-click [start_web_app.bat](file:///E:/webstack/multi_doc_writer/start_web_app.bat). It automatically checks and installs dependencies, launches the server, and opens your browser to `http://127.0.0.1:5000`.
+* **To run the Web Form**: Double-click [start_web_app.bat](file:///E:/webstack/multi_doc_writer/start_web_app.bat). It automatically checks and installs dependencies, launches the server, and opens your browser to `http://127.0.0.1:5001`.
 * **To run CLI sample 1 (Gawand)**: Double-click [run_cli_sample.bat](file:///E:/webstack/multi_doc_writer/run_cli_sample.bat). It runs the generator using `sample_input.json` and opens the output folder.
 * **To run CLI sample 2 (Rane)**: Double-click [run_cli_sample_2.bat](file:///E:/webstack/multi_doc_writer/run_cli_sample_2.bat). It runs the generator using `sample_input_2.json` and opens the output folder.
 
@@ -101,14 +101,14 @@ You can use either the Web Application (recommended for everyday use) or the CLI
    ```
 2. Open your web browser and navigate to:
    ```
-   http://127.0.0.1:5000
+   http://127.0.0.1:5001
    ```
 3. **UX Tip**: Click the **"⚡ Load Sachin Gawand Sample"** button at the top to instantly populate the form with a complete working dataset.
 4. Modify any fields as needed and click **"Generate & Download ZIP"** to retrieve all 5 completed files.
 
 > [!TIP]
 > **Network Sharing**: To access the form from a mobile phone or another device on the same local network, run the server with:
-> `python app.py --network` and connect to `http://<your-computer-ip>:5000`.
+> `python app.py --network` and connect to `http://<your-computer-ip>:5001`.
 
 ---
 

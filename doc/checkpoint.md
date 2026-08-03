@@ -1,6 +1,6 @@
 # Session Checkpoint: Solar Docs Automation
 
-**Date**: 2026-07-27  
+**Date**: 2026-07-30  
 **Repository**: [Ratnadeep-2007/multi_doc_writer](https://github.com/Ratnadeep-2007/multi_doc_writer)  
 **Branch**: `main`
 
@@ -8,6 +8,8 @@
 
 ## 🎯 Recent Milestones & System Status
 
+- [x] **Mobile Drawer Navigation UI**: Replaced stacked vertical layout on smaller screen sizes with a premium drawer-based navigation panel. Added sticky top header bar, hamburger button, backdrop blur overlay, and close transition controls.
+- [x] **Deployment Guide & WSGI Debugging**: Created troubleshooting guide for cPanel/Passenger environments and resolved dependencies configuration processes (like virtualenv paths integration).
 - [x] **Premium Split-Dashboard Restyling (Design Spec v2)**: Swapped the heavy space-slate dark glassmorphism theme for a clean, professional utility interface using flat cards, a grayscale color system (with a dark sidebar), standard Inter typography, and crisp Lucide vector icons.
 - [x] **Clear Form Data Action**: Added a destructively styled "Clear Form Data" button in the sidebar footer with a confirmation dialog.
 - [x] **Dynamic Unit Dropdowns**: Implemented unit choice selectors (`kW`/`W` and `WP`/`W`/`Wp`) next to capacities and panel wattage inputs.

@@ -123,7 +123,7 @@ Flag these to the user if they haven't confirmed them already:
 2. Add a short `README.md` inside that folder covering: how to install deps
    (`pip install docxtpl flask --break-system-packages`), how to run the CLI
    (`python3 generate_docs.py your_input.json`), and how to run the web form
-   (`python3 app.py` then open `http://127.0.0.1:5000`).
+   (`python3 app.py` then open `http://127.0.0.1:5001`).
 3. Call `present_files` so the user can download the folder/zip.
 4. Confirm with the user whether the hardcoded fields listed above
    (MSEDCL officer/subdivision address, Annex2 district fragment) should

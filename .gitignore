@@ -21,3 +21,6 @@ Desktop.ini
 # Office lock files
 ~$*
 
+# Log files
+*.log
+

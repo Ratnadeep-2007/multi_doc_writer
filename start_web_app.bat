@@ -22,10 +22,10 @@ start "" /b python app.py
 echo.
 echo [3/3] Opening web browser...
 timeout /t 2 >nul
-start http://127.0.0.1:5000
+start http://127.0.0.1:5001
 
 echo.
-echo Server is running on http://127.0.0.1:5000
+echo Server is running on http://127.0.0.1:5001
 echo Close this window to stop the server.
 echo ==============================================
 pause

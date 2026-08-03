@@ -33,7 +33,7 @@ Run:
 ```
 python app.py
 ```
-Then open `http://127.0.0.1:5000` in any browser. Runs entirely on your own
+Then open `http://127.0.0.1:5001` in any browser. Runs entirely on your own
 machine — no internet connection needed once installed, no data leaves your
 computer.
 

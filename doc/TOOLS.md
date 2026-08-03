@@ -42,5 +42,5 @@ to run and edit this project (separate from the Python libraries listed in
 4. `pip install docxtpl flask --break-system-packages`
 5. Run either:
    - `python generate_docs.py sample_input.json` (CLI)
-   - `python app.py` then open `http://127.0.0.1:5000` (web form)
+   - `python app.py` then open `http://127.0.0.1:5001` (web form)
 6. Open generated `.docx` files in Word or LibreOffice to check them

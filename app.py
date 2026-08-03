@@ -5,17 +5,34 @@ Local one-time-input form for the solar project documents.
 Run:
     pip install flask docxtpl --break-system-packages
     python3 app.py
-Then open http://127.0.0.1:5000 in your browser.
+Then open http://127.0.0.1:5001 in your browser.
 """
 import io
 import re
 import zipfile
+import logging
 from pathlib import Path
 
 from flask import Flask, request, render_template_string, send_file
 from docxtpl import DocxTemplate
 
+# Configure logging to write to app.log in the same directory
+LOG_FILE = Path(__file__).parent / "app.log"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(str(LOG_FILE)),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("multi_doc_writer")
+
 app = Flask(__name__)
+# Pass standard Flask errors to the file logger as well
+app.logger.handlers.extend(logging.getLogger().handlers)
+app.logger.setLevel(logging.INFO)
+
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
 TEMPLATES = [
@@ -613,25 +630,130 @@ FORM_HTML = r"""
     100% { transform: rotate(360deg); }
   }
 
+  /* Mobile Header Styles */
+  .mobile-header {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-sidebar);
+    color: var(--text-on-dark);
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 1000;
+  }
+
+  .mobile-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-logo .logo-text {
+    font-size: 1.15rem;
+    font-weight: 750;
+    color: var(--text-on-dark);
+  }
+
+  .btn-menu-toggle, .btn-sidebar-close {
+    background: transparent;
+    border: none;
+    color: var(--text-on-dark);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease;
+  }
+
+  .btn-menu-toggle:hover, .btn-sidebar-close:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .btn-menu-toggle svg, .btn-sidebar-close svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .btn-sidebar-close {
+    display: none; /* hidden on desktop */
+  }
+
+  .sidebar-logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 32px;
+  }
+
+  .mobile-progress-mini {
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-sidebar);
+    border-radius: 12px;
+    padding: 2px 10px;
+  }
+
+  /* Backdrop Overlay */
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(20, 22, 31, 0.5);
+    z-index: 1050;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
   /* Responsive styling */
   @media (max-width: 992px) {
-    .app-layout {
-      flex-direction: column;
+    .mobile-header {
+      display: flex;
     }
     
     .sidebar {
-      width: 100%;
-      height: auto;
-      position: relative;
-      border-right: none;
-      border-bottom: 1px solid var(--border-sidebar);
-      padding: 24px;
+      position: fixed;
+      top: 0;
+      left: -280px; /* Hidden offscreen */
+      width: 280px;
+      height: 100vh;
+      z-index: 1100;
+      transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.25);
+      border-right: 1px solid var(--border-sidebar);
+    }
+    
+    .sidebar.open {
+      left: 0;
+    }
+    
+    .btn-sidebar-close {
+      display: flex;
+    }
+
+    .sidebar-logo-container {
+      margin-bottom: 24px;
+    }
+    
+    .sidebar-logo {
+      margin-bottom: 0;
     }
     
     .main-content {
       margin-left: 0;
       width: 100%;
-      padding: 32px 24px;
+      padding: 92px 16px 32px; /* Accounts for fixed mobile header */
     }
     
     .app-header h1 {
@@ -641,12 +763,35 @@ FORM_HTML = r"""
 </style>
 </head>
 <body>
+
+<!-- Mobile Top Header Bar -->
+<div class="mobile-header">
+  <button type="button" class="btn-menu-toggle" id="menu-toggle-btn" onclick="toggleSidebar()">
+    <i data-lucide="menu"></i>
+  </button>
+  <div class="mobile-logo">
+    <span class="logo-icon"><i data-lucide="sun"></i></span>
+    <span class="logo-text">Solar Docs</span>
+  </div>
+  <div class="mobile-progress-mini">
+    <span id="mobile-progress-pct">0%</span>
+  </div>
+</div>
+
+<!-- Backdrop Overlay for Mobile Sidebar -->
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
 <div class="app-layout">
   <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-icon"><i data-lucide="sun"></i></span>
-      <span class="logo-text">Solar Docs</span>
+  <aside class="sidebar" id="app-sidebar">
+    <div class="sidebar-logo-container">
+      <div class="sidebar-logo">
+        <span class="logo-icon"><i data-lucide="sun"></i></span>
+        <span class="logo-text">Solar Docs</span>
+      </div>
+      <button type="button" class="btn-sidebar-close" id="sidebar-close-btn" onclick="toggleSidebar()">
+        <i data-lucide="x"></i>
+      </button>
     </div>
     
     <!-- Progress Indicator -->
@@ -842,11 +987,32 @@ function clearData() {
   }
 }
 
+function toggleSidebar() {
+  const sidebar = document.getElementById('app-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar && backdrop) {
+    sidebar.classList.toggle('open');
+    if (sidebar.classList.contains('open')) {
+      backdrop.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    } else {
+      backdrop.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+}
+
 // Sidebar Scroll Function
 function scrollToSection(id) {
   const el = document.getElementById(id);
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Close sidebar on mobile after navigating
+    const sidebar = document.getElementById('app-sidebar');
+    if (sidebar && sidebar.classList.contains('open')) {
+      toggleSidebar();
+    }
   }
 }
 
@@ -888,6 +1054,12 @@ function updateProgress() {
   const pct = totalRequired > 0 ? Math.round((filledRequired / totalRequired) * 100) : 0;
   document.getElementById('progress-pct').innerText = `${pct}%`;
   document.getElementById('progress-bar').style.width = `${pct}%`;
+  
+  // Update mobile mini progress bar
+  const mobilePct = document.getElementById('mobile-progress-pct');
+  if (mobilePct) {
+    mobilePct.innerText = `${pct}%`;
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -984,11 +1156,15 @@ def safe_folder_name(name: str) -> str:
 
 @app.route("/")
 def index():
+    logger.info("Index page accessed (IP: %s, UA: %s)", request.remote_addr, request.headers.get("User-Agent"))
     return render_template_string(FORM_HTML, groups=GROUPS)
 
 
 @app.route("/generate", methods=["POST"])
 def generate():
+    consumer_name = request.form.get("consumer_name", "").strip()
+    logger.info("Generate documents requested for consumer: '%s' (IP: %s)", consumer_name, request.remote_addr)
+    
     data = {}
     for group in GROUPS:
         for field in group["fields"]:
@@ -1029,7 +1205,8 @@ def generate():
             if watt_match and count > 0:
                 watt_val = int(watt_match.group(0))
                 data["module_capacity_watt"] = str(count * watt_val)
-        except Exception:
+        except Exception as e:
+            logger.warning("Auto-calculation of capacities failed: %s", str(e))
             pass
 
     # Validate that required fields are not empty
@@ -1040,32 +1217,42 @@ def generate():
                 missing.append(field["label"])
 
     if missing:
+        logger.warning("Generation aborted due to missing required fields for '%s': %s", consumer_name, missing)
         return f"Missing required fields: {', '.join(missing)}", 400
 
-    folder = safe_folder_name(data["consumer_name"]) or "documents"
-    mem_zip = io.BytesIO()
-    with zipfile.ZipFile(mem_zip, "w", zipfile.ZIP_DEFLATED) as zf:
-        for template_name in TEMPLATES:
-            doc = DocxTemplate(TEMPLATE_DIR / template_name)
-            doc.render(data)
-            buf = io.BytesIO()
-            doc.save(buf)
-            fixed_bytes = dedupe_docx_bytes(buf.getvalue())
-            out_name = template_name.replace("_TEMPLATE", "")
-            zf.writestr(f"{folder}/{out_name}", fixed_bytes)
+    try:
+        folder = safe_folder_name(data["consumer_name"]) or "documents"
+        mem_zip = io.BytesIO()
+        with zipfile.ZipFile(mem_zip, "w", zipfile.ZIP_DEFLATED) as zf:
+            for template_name in TEMPLATES:
+                logger.info("Processing template: %s", template_name)
+                template_path = TEMPLATE_DIR / template_name
+                if not template_path.exists():
+                    raise FileNotFoundError(f"Template file not found: {template_path}")
+                doc = DocxTemplate(template_path)
+                doc.render(data)
+                buf = io.BytesIO()
+                doc.save(buf)
+                fixed_bytes = dedupe_docx_bytes(buf.getvalue())
+                out_name = template_name.replace("_TEMPLATE", "")
+                zf.writestr(f"{folder}/{out_name}", fixed_bytes)
 
-    mem_zip.seek(0)
-    return send_file(
-        mem_zip,
-        as_attachment=True,
-        download_name=f"{folder}_documents.zip",
-        mimetype="application/zip",
-    )
+        logger.info("Successfully generated documents ZIP archive for '%s' (%d files)", consumer_name, len(TEMPLATES))
+        mem_zip.seek(0)
+        return send_file(
+            mem_zip,
+            as_attachment=True,
+            download_name=f"{folder}_documents.zip",
+            mimetype="application/zip",
+        )
+    except Exception as e:
+        logger.exception("Failed to generate documents for '%s' due to internal error", consumer_name)
+        return f"Internal Server Error during generation: {str(e)}", 500
 
 
 if __name__ == "__main__":
     import sys
     # Support custom port/host if user wants, e.g. for access on local network
     host = "0.0.0.0" if "--network" in sys.argv else "127.0.0.1"
-    print(f"Starting server on {host} port 5000...")
-    app.run(debug=True, host=host, port=5000)
+    print(f"Starting server on {host} port 5001...")
+    app.run(debug=True, host=host, port=5001)

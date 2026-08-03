@@ -51,6 +51,7 @@
 * **Density & Scan-ability**: Reduced card padding, card hover-lift animations, and text gradient decorations to focus strictly on paperwork efficiency.
 * **Validation**: Small solid dot indicators in the sidebar turn green dynamically when a card's required fields are fully filled in.
 * **Actions**: Includes outlines for loading sample data, a red outline clear button (with confirmation alerts) to wipe form states, and a streamlined loader spinner modal.
+* **Mobile Responsiveness**: Designed a sliding sidebar drawer for screens `< 992px`, toggleable via a sticky top header bar and a backdrop blur overlay. The drawer auto-closes upon clicking navigation anchors to streamline document editing.
 
 ---
 
@@ -58,3 +59,19 @@
 
 * **Total unique fields**: 30 non-redundant fields.
 * **Full Mapping Table**: Refer to [README.md](file:///E:/webstack/Auto_Application_Deep/Auto_Application_Deep/multi_doc_writer/README.md) for full field descriptions and template usage.
+
+---
+
+## 🌐 Deployment & Name Configuration Memory
+
+### 1. DNS Settings (Nameservers & Records)
+* **Main Subdomain**: `autodocumentation.sspowertech.com`
+* **WWW Subdomain**: `www.autodocumentation.sspowertech.com`
+* **Hosting Server IP**: `190.92.174.87` (resolved from main domain `sspowertech.com` hosting)
+* **DNS Resolution**: Both entries are configured as **A records** pointing to `190.92.174.87`. This resolves CNAME collision errors (such as `CNAME and other data` invalid zone errors) and ensures consistent routing for both `www` and non-`www` requests.
+
+### 2. cPanel Hosting Environment
+* **Application Root Directory**: `/home/<cpanel_user>/autodocumentation`
+* **Application URL**: `autodocumentation.sspowertech.com`
+* **WSGI Startup Script**: `passenger_wsgi.py` (imports the Flask `app` from `app.py` and exposes it as the global `application` object).
+* **Virtualenv Dependency Loading**: The virtual environment's `site-packages` directory is configured to load via the `sys.path.insert()` helper block inside `passenger_wsgi.py` to ensure dependencies like `docxtpl` and `flask` load correctly under the Phusion Passenger daemon.
