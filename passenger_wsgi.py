@@ -9,7 +9,7 @@ sys.path.insert(0, APP_DIR)
 # In cPanel, virtualenvs are usually placed under:
 # /home/<cpanel_username>/virtualenv/<app_root>/<python_version>/lib/python<version>/site-packages
 # If dependencies fail to load, you can uncomment and customize the line below:
-# sys.path.insert(0, '/home/YOUR_CPANEL_USERNAME/virtualenv/autodocumentation.sspowertech.com/YOUR_PYTHON_VERSION/lib/pythonYOUR_VERSION/site-packages')
+# sys.path.insert(0, '/home/sspowertech/virtualenv/autodocumentation.sspowertech.com/3.10/lib/python3.10/site-packages')
 
 # 3. Import the Flask application object and catch errors for diagnostic log
 try:
