@@ -7,10 +7,11 @@ echo.
 cd /d "%~dp0"
 
 echo [1/3] Checking dependencies...
-python -c "import flask, docxtpl" 2>nul
+python -c "import flask, docxtpl, pypdf" 2>nul
 if %errorlevel% neq 0 (
-    echo Python dependencies not found. Installing docxtpl and flask...
-    python -m pip install docxtpl flask
+    echo Python dependencies not found. Installing from requirements.txt...
+    python -m pip install -r requirements.txt
+    if errorlevel 1 exit /b 1
 ) else (
     echo Dependencies are already satisfied.
 )

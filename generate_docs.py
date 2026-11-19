@@ -18,6 +18,8 @@ import zipfile
 from pathlib import Path
 from docxtpl import DocxTemplate
 
+from document_defaults import VENDOR_AND_METER_DEFAULTS
+
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
 TEMPLATES = [
@@ -39,8 +41,7 @@ REQUIRED_FIELDS = [
     "sanctioned_capacity_kw", "rooftop_capacity_kw", "module_make",
     "inverter_capacity_kw", "inverter_make", "pv_module_count", "module_capacity_watt",
     "installation_date", "agreement_date", "execution_date_text",
-    "vendor_name", "vendor_name_full", "vendor_address",
-    "sanction_number", "almm_model_number",
+    "almm_model_number",
     "module_wattage", "inverter_model",
     "mppt_count", "inverter_manufacture_year", "meter_serial_number",
 ]
@@ -49,7 +50,7 @@ DEFAULTS = {
     "officer_designation": "Deputy Executive Engineer Alibag II",
     "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201",
     "consumer_residential_address_suffix": "TAL. ALIBAG, DIST. RAIGAD",
-    "vendor_address_suffix": "Tal: Alibag,  DIST. RAIGAD, 402201.",
+    **VENDOR_AND_METER_DEFAULTS,
 }
 
 
@@ -121,7 +122,7 @@ def load_input(path: str) -> dict:
             used_defaults.append(k)
 
     if used_defaults:
-        print("\nNOTE: The following optional fields were missing and filled with defaults (Alibag subdivision):")
+        print("\nNOTE: The following fields were filled with defaults:")
         for k in used_defaults:
             print(f"  - {k}: {data[k]}")
         print()
@@ -148,7 +149,7 @@ def main():
     for template_name in TEMPLATES:
         template_path = TEMPLATE_DIR / template_name
         doc = DocxTemplate(template_path)
-        doc.render(data)
+        doc.render(data, autoescape=True)
         out_name = template_name.replace("_TEMPLATE", "")
         out_path = out_dir / out_name
         doc.save(out_path)

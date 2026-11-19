@@ -3,7 +3,7 @@
 Local one-time-input form for the solar project documents.
 
 Run:
-    pip install flask docxtpl --break-system-packages
+    python -m pip install -r requirements.txt
     python3 app.py
 Then open http://127.0.0.1:5001 in your browser.
 """
@@ -11,10 +11,16 @@ import io
 import re
 import zipfile
 import logging
+from datetime import date, datetime
+from decimal import Decimal
 from pathlib import Path
 
-from flask import Flask, request, render_template_string, send_file
+from flask import Flask, jsonify, request, render_template_string, send_file
 from docxtpl import DocxTemplate
+from werkzeug.exceptions import RequestEntityTooLarge
+
+from document_defaults import VENDOR_AND_METER_DEFAULTS
+from sanction_letter import SanctionLetterError, extract_sanction_letter
 
 # Configure logging to write to app.log in the same directory
 LOG_FILE = Path(__file__).parent / "app.log"
@@ -29,6 +35,8 @@ logging.basicConfig(
 logger = logging.getLogger("multi_doc_writer")
 
 app = Flask(__name__)
+MAX_SANCTION_PDF_SIZE = 5 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = MAX_SANCTION_PDF_SIZE + 64 * 1024
 # Pass standard Flask errors to the file logger as well
 app.logger.handlers.extend(logging.getLogger().handlers)
 app.logger.setLevel(logging.INFO)
@@ -70,8 +78,8 @@ GROUPS = [
         "icon": "user",
         "fields": [
             {"label": "Consumer Full Name", "name": "consumer_name", "ph": "SACHIN SAHDEV GAWAND", "required": True},
-            {"label": "Consumer Number", "name": "consumer_number", "ph": "023130009549", "required": True},
-            {"label": "Mobile Number", "name": "mobile_number", "ph": "9260557576", "required": True},
+            {"label": "Consumer Number", "name": "consumer_number", "inputmode": "numeric", "ph": "023130009549", "required": True},
+            {"label": "Mobile Number", "name": "mobile_number", "input_type": "tel", "ph": "9260557576", "required": True},
             {"label": "Email Address", "name": "email", "ph": "solar2ssitindia.com", "required": True},
         ]
     },
@@ -88,38 +96,39 @@ GROUPS = [
         "title": "Solar System Specs",
         "icon": "sun",
         "fields": [
-            {"label": "Sanctioned Capacity", "name": "sanctioned_capacity_kw", "ph": "3.3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
-            {"label": "Rooftop Installed Capacity", "name": "rooftop_capacity_kw", "ph": "3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
-            {"label": "Sanction Number (with date)", "name": "sanction_number", "ph": "4138/ALIBAG-II/75755227 Date:17-Jul-2026", "required": True, "full_width": True},
-            {"label": "PV Solar Panel Module Count", "name": "pv_module_count", "ph": "6", "required": True},
-            {"label": "Solar Panel Module Wattage", "name": "module_wattage", "ph": "550", "required": True, "unit_choices": ["WP", "W", "Wp"], "unit_default": "WP"},
-            {"label": "Solar Panel Module Capacity (Watt, Auto-calculated)", "name": "module_capacity_watt", "ph": "3300", "required": False, "full_width": True},
+            {"label": "Sanctioned Capacity", "name": "sanctioned_capacity_kw", "step": "any", "ph": "3.3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
+            {"label": "Rooftop Installed Capacity", "name": "rooftop_capacity_kw", "step": "any", "ph": "3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
+            {"label": "Sanction Number (optional)", "name": "sanction_number", "ph": "4138/ALIBAG-II/75755227", "required": False},
+            {"label": "Sanction Date", "name": "sanction_date", "date_format": "%d-%b-%Y", "required": True},
+            {"label": "PV Solar Panel Module Count", "name": "pv_module_count", "step": "1", "ph": "6", "required": True},
+            {"label": "Solar Panel Module Wattage", "name": "module_wattage", "step": "any", "ph": "550", "required": True, "unit_choices": ["WP", "W", "Wp"], "unit_default": "WP"},
+            {"label": "Solar Panel Module Capacity (Watt, Auto-calculated)", "name": "module_capacity_watt", "calculated": True, "ph": "3300", "required": False, "full_width": True},
             {"label": "Solar Panel Module Make / Manufacturer", "name": "module_make", "ph": "Waaree India pvt ltd", "required": True},
             {"label": "ALMM Model Number", "name": "almm_model_number", "ph": "AE14HXXXVHC10B", "required": True},
-            {"label": "Inverter Capacity", "name": "inverter_capacity_kw", "ph": "3.3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
+            {"label": "Inverter Capacity", "name": "inverter_capacity_kw", "step": "any", "ph": "3.3", "required": True, "unit_choices": ["kW", "W"], "unit_default": "kW"},
             {"label": "Inverter Make / Manufacturer", "name": "inverter_make", "ph": "Polycab Solar Pvt. Ltd", "required": True},
             {"label": "Inverter Model / Rating", "name": "inverter_model", "ph": "Vs-502s", "required": True},
-            {"label": "MPPT / Charge Controller Count", "name": "mppt_count", "ph": "1", "required": True},
-            {"label": "Inverter Year of Manufacturing", "name": "inverter_manufacture_year", "ph": "2025", "required": True},
+            {"label": "MPPT / Charge Controller Count", "name": "mppt_count", "step": "1", "ph": "1", "required": True},
+            {"label": "Inverter Year of Manufacturing", "name": "inverter_manufacture_year", "step": "1", "ph": "2025", "required": True},
         ]
     },
     {
         "title": "Execution & Agreement Dates",
         "icon": "calendar",
         "fields": [
-            {"label": "Installation Date", "name": "installation_date", "ph": "4-June-2026", "required": True},
-            {"label": "Agreement Date (DD/MM/YYYY)", "name": "agreement_date", "ph": "22/06/2026", "required": True},
-            {"label": "Execution Date (Written out for Annex-2)", "name": "execution_date_text", "ph": "22nd of June 2026", "required": True, "full_width": True},
+            {"label": "Installation Date", "name": "installation_date", "date_format": "%d-%B-%Y", "required": True},
+            {"label": "Agreement Date", "name": "agreement_date", "date_format": "%d/%m/%Y", "required": True},
+            {"label": "Execution Date (Annex-2)", "name": "execution_date_text", "date_format": "%d of %B %Y", "required": True},
         ]
     },
     {
         "title": "Vendor Credentials",
         "icon": "building-2",
         "fields": [
-            {"label": "Vendor Short Name", "name": "vendor_name", "ph": "S S Powertech", "required": True},
-            {"label": "Vendor Full Name (with M/S)", "name": "vendor_name_full", "ph": "M/S S S PowerTech", "required": True},
-            {"label": "Vendor Registered Address", "name": "vendor_address", "ph": "Ranjanpada, Post Awas, Tal. Alibag, District. Raigad 402201", "required": True, "full_width": True},
-            {"label": "Vendor Address Suffix (Taluka/Dist/Pin)", "name": "vendor_address_suffix", "ph": "Tal: Alibag,  DIST. RAIGAD, 402201.", "required": False, "default": "Tal: Alibag,  DIST. RAIGAD, 402201.", "full_width": True},
+            {"label": "Vendor Short Name", "name": "vendor_name", "ph": "S S Powertech", "required": True, "default": VENDOR_AND_METER_DEFAULTS["vendor_name"]},
+            {"label": "Vendor Full Name (with M/S)", "name": "vendor_name_full", "ph": "M/S S S PowerTech", "required": True, "default": VENDOR_AND_METER_DEFAULTS["vendor_name_full"]},
+            {"label": "Vendor Registered Address", "name": "vendor_address", "ph": "Ranjanpada, Post Awas, Tal. Alibag, District. Raigad 402201", "required": True, "default": VENDOR_AND_METER_DEFAULTS["vendor_address"], "full_width": True},
+            {"label": "Vendor Address Suffix (Taluka/Dist/Pin)", "name": "vendor_address_suffix", "ph": "Tal: Alibag,  DIST. RAIGAD, 402201.", "required": False, "default": VENDOR_AND_METER_DEFAULTS["vendor_address_suffix"], "full_width": True},
         ]
     },
     {
@@ -134,6 +143,7 @@ GROUPS = [
         "title": "Meter Testing Letter",
         "icon": "plug",
         "fields": [
+            {"label": "Generation Meter Make", "name": "generation_meter_make", "ph": "Schneider electric India pvt ltd", "required": True, "default": VENDOR_AND_METER_DEFAULTS["generation_meter_make"]},
             {"label": "Meter Serial Number", "name": "meter_serial_number", "ph": "U6541057", "required": True},
         ]
     }
@@ -537,6 +547,71 @@ FORM_HTML = r"""
     color: var(--text-secondary);
   }
 
+  .import-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .import-controls input[type="file"] {
+    flex: 1 1 230px;
+    min-width: 0;
+  }
+
+  #import-status {
+    margin-top: 10px;
+  }
+
+  #import-status[data-error="true"] {
+    color: var(--danger);
+  }
+
+  .unit-field {
+    display: flex;
+    gap: 8px;
+  }
+
+  .unit-field input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .date-field {
+    display: flex;
+    gap: 8px;
+  }
+
+  .date-field input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .date-picker-button {
+    flex-shrink: 0;
+    padding: 8px 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .date-picker-button:hover, .date-picker-button:focus-visible {
+    border-color: var(--accent);
+  }
+
+  .date-field[data-picker-ready] input::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+
+  .field-error, #form-errors a {
+    color: var(--danger);
+  }
+
   .submit-container {
     text-align: left;
     margin-top: 8px;
@@ -836,7 +911,32 @@ FORM_HTML = r"""
       <p class="subtitle">Fill the form once to generate all 7 solar installation documents</p>
     </header>
     
-    <form method="POST" action="/generate" id="docs-form">
+    <section class="card full-width-section" aria-labelledby="import-title">
+      <h2 class="card-title" id="import-title">Import from a sanction letter</h2>
+      <form id="sanction-import" method="post" enctype="multipart/form-data"
+            action="{{ url_for('import_sanction_letter') }}">
+        <label for="sanction-pdf">MSEDCL rooftop sanction letter (optional)</label>
+        <div class="import-controls">
+          <input id="sanction-pdf" type="file" name="document" accept="application/pdf,.pdf"
+                 aria-describedby="import-hint" required>
+          <button type="submit" class="btn-primary">Fill from PDF</button>
+        </div>
+        <p class="hint-text" id="import-hint">Use the original portal PDF, up to 5 MB. Review the imported values and complete the remaining fields before generating.</p>
+        <p id="import-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    {% if errors %}
+      <section class="card full-width-section" role="alert" tabindex="-1" id="form-errors">
+        <h2 class="card-title">Please check the form</h2>
+        <ul>
+          {% for name, message in errors.items() %}
+            <li>{% if name %}<a href="#{{ name }}">{{ message }}</a>{% else %}{{ message }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+    <form method="POST" action="{{ url_for('generate') }}" id="docs-form">
       {% for group in groups %}
         <div class="card {% if group.title in ['Solar System Specs', 'Address Information', 'MSEDCL Subdivision (Optional)'] %}full-width-section{% endif %}" id="card-section-{{ loop.index0 }}">
           <h2 class="card-title"><i data-lucide="{{ group.icon }}"></i> {{ group.title }}</h2>
@@ -847,37 +947,44 @@ FORM_HTML = r"""
                   {{ field.label }}
                   {% if field.required %}<span class="required-asterisk">*</span>{% endif %}
                 </label>
-                {% if field.unit_choices %}
-                  <div style="display: flex; gap: 8px; width: 100%;">
-                    <input 
-                      type="text" 
-                      id="{{ field.name }}" 
-                      name="{{ field.name }}" 
-                      placeholder="{{ field.ph }}" 
-                      {% if field.default %}value="{{ field.default }}"{% endif %}
-                      {% if field.required %}required{% endif %}
-                      style="flex: 1;"
-                    >
-                    <select 
-                      name="{{ field.name }}_unit" 
-                      id="{{ field.name }}_unit"
-                    >
-                      {% for choice in field.unit_choices %}
-                        <option value="{{ choice }}" {% if choice == field.unit_default %}selected{% endif %}>{{ choice }}</option>
-                      {% endfor %}
-                    </select>
+                {% if field.date_format %}<div class="date-field">
+                {% elif field.unit_choices %}<div class="unit-field">{% endif %}
+                <input
+                  type="{{ 'date' if field.date_format else 'number' if field.step else field.input_type|default('text') }}"
+                  id="{{ field.name }}"
+                  name="{{ field.name }}"
+                  value="{{ values.get(field.name, field.default|default('')) }}"
+                  {% if field.default %}data-default="{{ field.default }}"{% endif %}
+                  aria-describedby="hint-{{ field.name }}{% if field.name in errors %} error-{{ field.name }}{% endif %}"
+                  {% if field.name in errors %}aria-invalid="true"{% endif %}
+                  {% if field.ph and not field.calculated %}placeholder="{{ field.ph }}"{% endif %}
+                  {% if field.inputmode %}inputmode="{{ field.inputmode }}"{% endif %}
+                  {% if field.step %}min="{{ 1 if field.step == '1' else 0 }}" step="{{ field.step }}"{% endif %}
+                  {% if field.required %}required{% endif %}
+                  {% if field.calculated %}readonly{% endif %}
+                >
+                {% if field.date_format %}
+                  <button class="date-picker-button" type="button" data-calendar-for="{{ field.name }}"
+                          aria-label="Open calendar for {{ field.label }}" hidden>
+                    Calendar <span aria-hidden="true">&#9662;</span>
+                  </button>
                   </div>
-                {% else %}
-                  <input 
-                    type="text" 
-                    id="{{ field.name }}" 
-                    name="{{ field.name }}" 
-                    placeholder="{{ field.ph }}" 
-                    {% if field.default %}value="{{ field.default }}"{% endif %}
-                    {% if field.required %}required{% endif %}
-                  >
+                {% elif field.unit_choices %}
+                  <select name="{{ field.name }}_unit" id="{{ field.name }}_unit" data-default="{{ field.unit_default }}" aria-label="{{ field.label }} unit">
+                    {% for choice in field.unit_choices %}
+                      <option value="{{ choice }}" {% if choice == values.get(field.name ~ '_unit', field.unit_default) %}selected{% endif %}>{{ choice }}</option>
+                    {% endfor %}
+                  </select>
+                  </div>
                 {% endif %}
-                <span class="hint-text">e.g. {{ field.ph }}</span>
+                <span class="hint-text" id="hint-{{ field.name }}">
+                  {% if field.date_format %}Select a date from the calendar.
+                  {% elif field.calculated %}Panel count multiplied by wattage per panel
+                  {% else %}e.g. {{ field.ph }}{% endif %}
+                </span>
+                {% if field.name in errors %}
+                  <span class="field-error" id="error-{{ field.name }}">{{ errors[field.name] }}</span>
+                {% endif %}
               </div>
             {% endfor %}
           </div>
@@ -892,7 +999,7 @@ FORM_HTML = r"""
     </form>
     
     <footer>
-      <p>Stateless offline tool. No data is stored or transmitted. Powered by Python, Flask, and docxtpl.</p>
+      <p>Sanction letters are processed by the app without sending them to an external service.</p>
     </footer>
   </main>
 </div>
@@ -925,16 +1032,17 @@ const sampleData = {
   "inverter_make": "Polycab Solar Pvt. Ltd",
   "pv_module_count": "6",
   "module_capacity_watt": "3300",
-  "installation_date": "4-June-2026",
-  "agreement_date": "22/06/2026",
-  "execution_date_text": "22nd of June 2026",
+  "installation_date": "2026-06-04",
+  "agreement_date": "2026-06-22",
+  "execution_date_text": "2026-06-22",
   "vendor_name": "S S Powertech",
   "vendor_name_full": "M/S S S PowerTech",
   "vendor_address": "Ranjanpada, Post Awas, Tal. Alibag, District. Raigad 402201",
   "vendor_address_suffix": "Tal: Alibag,  DIST. RAIGAD, 402201.",
   "officer_designation": "Deputy Executive Engineer Alibag II",
   "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201",
-  "sanction_number": "4138/ALIBAG-II/75755227 Date:17-Jul-2026",
+  "sanction_number": "4138/ALIBAG-II/75755227",
+  "sanction_date": "2026-07-17",
   "capacity_kw_compact": "3.3KW",
   "almm_model_number": "AE14HXXXVHC10B",
   "module_wattage": "550",
@@ -945,6 +1053,63 @@ const sampleData = {
   "inverter_manufacture_year": "2025",
   "meter_serial_number": "U6541057"
 };
+
+async function importSanctionLetter(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const status = document.getElementById("import-status");
+  const fileInput = document.getElementById("sanction-pdf");
+  const button = form.querySelector('button[type="submit"]');
+  const showStatus = (message, error = false) => {
+    status.textContent = message;
+    status.dataset.error = String(error);
+  };
+  if (fileInput.files[0].size > 5 * 1024 * 1024) {
+    showStatus("Choose a PDF of 5 MB or less.", true);
+    return;
+  }
+
+  const formData = new FormData(form);
+  button.disabled = true;
+  fileInput.disabled = true;
+  showStatus("Reading the sanction letter...");
+  try {
+    const response = await fetch(form.action, {method: "POST", body: formData});
+    const result = await response.json();
+    if (!response.ok) {
+      showStatus(result.error || "The PDF could not be imported.", true);
+      return;
+    }
+
+    const documentForm = document.getElementById("docs-form");
+    const updates = Object.entries(result.fields)
+      .map(([name, value]) => [documentForm.elements.namedItem(name), value])
+      .filter(([field]) => field);
+    const changed = updates.filter(([field, value]) => field.value !== value);
+    const replacesValues = changed.some(([field]) => {
+      if (field.name.endsWith("_unit")) {
+        return Boolean(documentForm.elements.namedItem(field.name.slice(0, -5))?.value);
+      }
+      return Boolean(field.value);
+    });
+    if (replacesValues && !confirm("Replace the matching fields with values from the PDF? Your other entries will stay. Review them if this is a different consumer.")) {
+      showStatus("Import canceled.");
+      return;
+    }
+    for (const [field, value] of changed) {
+      field.value = value;
+    }
+    const imported = updates.filter(([field]) => field.tagName !== "SELECT").length;
+    updateProgress();
+    form.reset();
+    showStatus("Imported " + imported + " fields. Review the values and complete the remaining fields.");
+  } catch {
+    showStatus("Could not read the PDF. Try again or enter the details manually.", true);
+  } finally {
+    button.disabled = false;
+    fileInput.disabled = false;
+  }
+}
 
 function fillSampleData() {
   for (const [key, value] of Object.entries(sampleData)) {
@@ -962,26 +1127,20 @@ function autoCalcModuleCapacity() {
   const wattInput = document.getElementById("module_wattage");
   const capacityInput = document.getElementById("module_capacity_watt");
   
-  if (countInput && wattInput && capacityInput) {
-    const count = parseInt(countInput.value) || 0;
-    const wattMatch = wattInput.value.match(/\d+/);
-    const watt = wattMatch ? parseInt(wattMatch[0]) : 0;
-    if (count > 0 && watt > 0) {
-      capacityInput.value = (count * watt).toString();
-    }
-  }
+  const count = countInput.valueAsNumber;
+  const wattage = wattInput.valueAsNumber;
+  capacityInput.value = Number.isInteger(count) && count > 0 && wattage > 0
+    ? String(Number((count * wattage).toPrecision(15)))
+    : "";
 }
 
-// Clear Data function
 function clearData() {
-  if (confirm("Are you sure you want to clear all form fields?")) {
-    const inputs = document.querySelectorAll('#docs-form input[type="text"]');
-    inputs.forEach(input => {
-      input.value = "";
+  if (confirm("Clear the entries and restore the default values?")) {
+    document.querySelectorAll('#docs-form input').forEach(input => {
+      input.value = input.dataset.default || "";
     });
-    const selects = document.querySelectorAll('#docs-form select');
-    selects.forEach(select => {
-      select.selectedIndex = 0;
+    document.querySelectorAll('#docs-form select').forEach(select => {
+      select.value = select.dataset.default;
     });
     updateProgress();
   }
@@ -1032,7 +1191,7 @@ function updateProgress() {
         totalRequired++;
         
         const input = document.getElementById(field.name);
-        if (input && input.value.trim() !== "") {
+        if (input && input.validity.valid && input.value.trim() !== "") {
           filledRequired++;
         } else {
           groupFilled = false;
@@ -1063,14 +1222,29 @@ function updateProgress() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (window.self === window.top) {
+    document.querySelectorAll("[data-calendar-for]").forEach(button => {
+      const input = document.getElementById(button.dataset.calendarFor);
+      if (typeof input.showPicker === "function") {
+        button.addEventListener("click", () => input.showPicker());
+        button.hidden = false;
+        button.closest(".date-field").dataset.pickerReady = "";
+      }
+    });
+  }
+
   // Initialize Lucide icons
-  lucide.createIcons();
+  window.lucide?.createIcons();
+  document.getElementById("form-errors")?.focus();
+  document.getElementById("sanction-import").addEventListener("submit", importSanctionLetter);
 
   const countInput = document.getElementById("pv_module_count");
   const wattInput = document.getElementById("module_wattage");
   if (countInput) countInput.addEventListener("input", autoCalcModuleCapacity);
   if (wattInput) wattInput.addEventListener("input", autoCalcModuleCapacity);
   
+  autoCalcModuleCapacity();
+
   // Track input to update progress
   const inputs = document.querySelectorAll('input, select');
   inputs.forEach(input => {
@@ -1154,71 +1328,126 @@ def safe_folder_name(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]+", "_", name.strip())
 
 
+def decimal_text(value):
+    text = format(value, "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
+def render_form(values=None, errors=None, status=200):
+    return render_template_string(
+        FORM_HTML, groups=GROUPS, values=values or {}, errors=errors or {}
+    ), status
+
+
+def parse_document_date(value, date_format):
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        # Accept the formats used by older versions of the web form.
+        normalized = re.sub(r"^(\d{1,2})(st|nd|rd|th) ", r"\1 ", value)
+        return datetime.strptime(normalized, date_format).date()
+
+
+def format_document_date(value, name, date_format):
+    if name == "execution_date_text":
+        day = value.day
+        suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+        return f"{day}{suffix} of {value:%B %Y}"
+    if name == "installation_date":
+        return f"{value.day}-{value:%B-%Y}"
+    return value.strftime(date_format)
+
+
 @app.route("/")
 def index():
     logger.info("Index page accessed (IP: %s, UA: %s)", request.remote_addr, request.headers.get("User-Agent"))
-    return render_template_string(FORM_HTML, groups=GROUPS)
+    return render_form()
+
+
+@app.post("/import-sanction-letter")
+def import_sanction_letter():
+    size_error = "Choose a PDF of 5 MB or less."
+    try:
+        upload = request.files.get("document")
+        if not upload or not upload.filename.lower().endswith(".pdf"):
+            return jsonify(error="Choose a PDF copy of the sanction letter."), 400
+        pdf_data = upload.stream.read(MAX_SANCTION_PDF_SIZE + 1)
+        if len(pdf_data) > MAX_SANCTION_PDF_SIZE:
+            return jsonify(error=size_error), 413
+        fields = extract_sanction_letter(io.BytesIO(pdf_data))
+    except RequestEntityTooLarge:
+        return jsonify(error=size_error), 413
+    except SanctionLetterError as error:
+        return jsonify(error=str(error)), 422
+
+    return jsonify(fields=fields)
 
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    consumer_name = request.form.get("consumer_name", "").strip()
-    logger.info("Generate documents requested for consumer: '%s' (IP: %s)", consumer_name, request.remote_addr)
-    
+    values = {name: value.strip() for name, value in request.form.items()}
+    consumer_name = values.get("consumer_name", "")
     data = {}
+    errors = {}
+    numbers = {}
+    units = {}
+
+    # Older clients submitted the sanction number and date as one text value.
+    sanction_number = values.get("sanction_number", "")
+    if not values.get("sanction_date"):
+        legacy_sanction = re.fullmatch(r"(.+?)\s+Date:\s*(.+)", sanction_number, re.IGNORECASE)
+        if legacy_sanction:
+            values["sanction_number"], values["sanction_date"] = legacy_sanction.groups()
+
     for group in GROUPS:
         for field in group["fields"]:
             name = field["name"]
-            val = request.form.get(name, "").strip()
-            
-            # If optional/has default and submitted empty, use its default
-            if not val and "default" in field:
-                val = field["default"]
-                
-            data[name] = val
+            label = field["label"]
+            value = values.get(name, "") or field.get("default", "")
+            data[name] = value
+            if field.get("required") and not value:
+                errors[name] = f"Enter {label.lower()}."
+                continue
 
-    # Auto-calculate module_capacity_watt from panel count * panel wattage
-    if data.get("pv_module_count") and data.get("module_wattage"):
-        try:
-            count = int(data["pv_module_count"])
-            # Format and convert values based on units before rendering
-            for group in GROUPS:
-                for field in group["fields"]:
-                    name = field["name"]
-                    if field.get("unit_choices"):
-                        val = data[name]
-                        unit = request.form.get(f"{name}_unit", "").strip()
-                        if name == "module_wattage":
-                            watt_match = re.search(r"\d+", val)
-                            if watt_match:
-                                data[name] = f"{watt_match.group(0)} {unit}"
-                        elif name in ["sanctioned_capacity_kw", "rooftop_capacity_kw", "inverter_capacity_kw"]:
-                            num_match = re.search(r"[\d\.]+", val)
-                            if num_match:
-                                num_val = float(num_match.group(0))
-                                if unit.lower() == "w":
-                                    num_val = num_val / 1000.0
-                                data[name] = f"{num_val:g}"
+            if field.get("date_format"):
+                try:
+                    chosen_date = parse_document_date(value, field["date_format"])
+                    values[name] = chosen_date.isoformat()
+                    data[name] = format_document_date(chosen_date, name, field["date_format"])
+                except ValueError:
+                    errors[name] = f"Select a valid {label.lower()}."
+            elif field.get("step"):
+                unit = values.get(f"{name}_unit", field.get("unit_default", ""))
+                allowed = field.get("unit_choices", [])
+                match = re.fullmatch(r"(\d+(?:\.\d+)?|\.\d+)\s*([a-zA-Z]*)", value)
+                if match and match[2] and match[2].lower() in {choice.lower() for choice in allowed}:
+                    if not values.get(f"{name}_unit"):
+                        unit = next(choice for choice in allowed if choice.lower() == match[2].lower())
+                elif match and match[2]:
+                    match = None
+                number = Decimal(match[1]) if match else Decimal(0)
+                whole = field["step"] == "1"
+                if number <= 0 or (whole and number != number.to_integral_value()):
+                    kind = "whole number" if whole else "number"
+                    errors[name] = f"Enter a positive {kind} for {label.lower()}."
+                elif allowed and unit not in allowed:
+                    errors[name] = f"Choose a unit for {label.lower()}."
+                else:
+                    numbers[name] = number
+                    units[name] = unit
+                    values[name] = match[1]
+                    if allowed:
+                        values[f"{name}_unit"] = unit
 
-            # Auto-calculate panel capacity in Watt (count * wattage number)
-            watt_match = re.search(r"\d+", str(data["module_wattage"]))
-            if watt_match and count > 0:
-                watt_val = int(watt_match.group(0))
-                data["module_capacity_watt"] = str(count * watt_val)
-        except Exception as e:
-            logger.warning("Auto-calculation of capacities failed: %s", str(e))
-            pass
+    if errors:
+        return render_form(values, errors, 400)
 
-    # Validate that required fields are not empty
-    missing = []
-    for group in GROUPS:
-        for field in group["fields"]:
-            if field.get("required") and not data.get(field["name"]):
-                missing.append(field["label"])
-
-    if missing:
-        logger.warning("Generation aborted due to missing required fields for '%s': %s", consumer_name, missing)
-        return f"Missing required fields: {', '.join(missing)}", 400
+    for name in ("sanctioned_capacity_kw", "rooftop_capacity_kw", "inverter_capacity_kw"):
+        capacity = numbers[name] / 1000 if units[name] == "W" else numbers[name]
+        data[name] = decimal_text(capacity)
+    data["module_wattage"] = f"{decimal_text(numbers['module_wattage'])} {units['module_wattage']}"
+    data["module_capacity_watt"] = decimal_text(numbers["pv_module_count"] * numbers["module_wattage"])
+    data["sanction_number"] = f"{data['sanction_number'] or ' -'} Date:{data['sanction_date']}"
 
     try:
         folder = safe_folder_name(data["consumer_name"]) or "documents"
@@ -1230,7 +1459,7 @@ def generate():
                 if not template_path.exists():
                     raise FileNotFoundError(f"Template file not found: {template_path}")
                 doc = DocxTemplate(template_path)
-                doc.render(data)
+                doc.render(data, autoescape=True)
                 buf = io.BytesIO()
                 doc.save(buf)
                 fixed_bytes = dedupe_docx_bytes(buf.getvalue())
@@ -1247,7 +1476,7 @@ def generate():
         )
     except Exception as e:
         logger.exception("Failed to generate documents for '%s' due to internal error", consumer_name)
-        return f"Internal Server Error during generation: {str(e)}", 500
+        return render_form(values, {"": "The documents could not be generated. Your entries are still here. Please try again."}, 500)
 
 
 if __name__ == "__main__":

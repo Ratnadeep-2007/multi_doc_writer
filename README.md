@@ -1,6 +1,6 @@
 # Solar Docs Auto-Fill (Multi-Doc Writer)
 
-A stateless offline document automation tool designed to eliminate repetitive data entry for residential solar installations. By inputting a single shared dataset (consumer name, capacity, dates, inverter specifications, vendor credentials, MSEDCL subdivision, etc.), the tool dynamically renders **5 distinct Word documents** required for net-metering and commissioning in Maharashtra (MSEDCL).
+A stateless offline document automation tool designed to eliminate repetitive data entry for residential solar installations. By inputting a single shared dataset (consumer name, capacity, dates, inverter specifications, vendor credentials, MSEDCL subdivision, etc.), the tool dynamically renders **seven Word documents** required for net-metering and commissioning in Maharashtra (MSEDCL).
 
 ---
 
@@ -9,8 +9,8 @@ A stateless offline document automation tool designed to eliminate repetitive da
 ```mermaid
 graph TD
     Input[Single Data Source<br/>JSON File or Web Form] --> Engine[docxtpl Python Engine]
-    Templates[5x Word Templates<br/>with Jinja Placeholders] --> Engine
-    Engine --> Output[5x Generated Word Documents]
+    Templates[7 Word Templates<br/>with Jinja Placeholders] --> Engine
+    Engine --> Output[7 Generated Word Documents]
     
     subgraph "Generated Documents"
         Doc1[Commissioning Report]
@@ -18,6 +18,8 @@ graph TD
         Doc3[Guarantee Certificate]
         Doc4[MSEDCL Agreement - Annexure 3]
         Doc5[Consumer Vendor Agreement - Annex 2]
+        Doc6[Work Completion Report]
+        Doc7[Meter Testing Letter]
     end
     
     Output --> Doc1
@@ -25,17 +27,20 @@ graph TD
     Output --> Doc3
     Output --> Doc4
     Output --> Doc5
+    Output --> Doc6
+    Output --> Doc7
 ```
 
 ---
 
 ## 🌟 Key Features
 
-* **Single Source of Truth**: Input your data once (23 fields) and generate all 5 documents in seconds.
+* **Shared form**. Enter the installation details once and generate all seven documents.
+* **PDF autofill**. Import an original MSEDCL rooftop sanction letter with selectable text. Review the imported fields before generating.
 * **Premium Glassmorphic Web App**: Includes a local Flask-based web interface with logical grouping, responsiveness, and a quick-load button for sample data.
 * **CLI Power-User Script**: Automate generation using a standard JSON file—ideal for batch processing.
 * **Fully Configurable MSEDCL Fields**: Previously hardcoded subdivision details (Officer Designation, Subdivision Address, Taluka/District suffixes) are now fully configurable input fields with smart fallbacks to the Alibag subdivision.
-* **100% Offline & Private**: Runs entirely on your local machine. No data ever leaves your computer, and no cloud subscriptions or external APIs are required.
+* **Local document processing**. Running the app locally keeps PDF extraction and Word generation on your machine. No external extraction service is required.
 
 ---
 
@@ -71,15 +76,12 @@ Make sure you have **Python 3.9+** installed on your system.
 
 ### Setup Instructions
 1. Open your terminal (PowerShell or Command Prompt on Windows).
-2. Navigate to the project folder:
-   ```bash
-   cd "E:\webstack\multi_doc_writer"
-   ```
+2. Open the cloned `multi_doc_writer` folder in your terminal.
 3. Install the required dependencies:
    ```bash
-   pip install docxtpl flask
+   python -m pip install -r requirements.txt
    ```
-   *Note: If you are using a managed Python environment, you may need to use `pip install docxtpl flask --break-system-packages`.*
+   *Note: If you are using a managed Python environment, you may need to use `python -m pip install -r requirements.txt --break-system-packages`.*
 
 ---
 
@@ -88,9 +90,9 @@ Make sure you have **Python 3.9+** installed on your system.
 You can use either the Web Application (recommended for everyday use) or the CLI Script (recommended for automation).
 
 ### Quick Automated Startup (Windows Only)
-* **To run the Web Form**: Double-click [start_web_app.bat](file:///E:/webstack/multi_doc_writer/start_web_app.bat). It automatically checks and installs dependencies, launches the server, and opens your browser to `http://127.0.0.1:5001`.
-* **To run CLI sample 1 (Gawand)**: Double-click [run_cli_sample.bat](file:///E:/webstack/multi_doc_writer/run_cli_sample.bat). It runs the generator using `sample_input.json` and opens the output folder.
-* **To run CLI sample 2 (Rane)**: Double-click [run_cli_sample_2.bat](file:///E:/webstack/multi_doc_writer/run_cli_sample_2.bat). It runs the generator using `sample_input_2.json` and opens the output folder.
+* **To run the Web Form**: Double-click `start_web_app.bat`. It automatically checks and installs dependencies, launches the server, and opens your browser to `http://127.0.0.1:5001`.
+* **To run CLI sample 1 (Gawand)**: Double-click `run_cli_sample.bat`. It runs the generator using `sample_input.json` and opens the output folder.
+* **To run CLI sample 2 (Rane)**: Double-click `run_cli_sample_2.bat`. It runs the generator using `sample_input_2.json` and opens the output folder.
 
 ---
 
@@ -104,7 +106,8 @@ You can use either the Web Application (recommended for everyday use) or the CLI
    http://127.0.0.1:5001
    ```
 3. **UX Tip**: Click the **"⚡ Load Sachin Gawand Sample"** button at the top to instantly populate the form with a complete working dataset.
-4. Modify any fields as needed and click **"Generate & Download ZIP"** to retrieve all 5 completed files.
+4. To autofill from a sanction letter, choose a single original PDF up to 5 MB and select **Fill from PDF**. Review the imported details and fill in the remaining fields.
+5. Select **Generate & Download ZIP** to retrieve all seven documents.
 
 > [!TIP]
 > **Network Sharing**: To access the form from a mobile phone or another device on the same local network, run the server with:
@@ -128,7 +131,7 @@ The following schema is the single source of truth used across the templates:
 
 | Field Name | Description | Used In |
 | :--- | :--- | :--- |
-| `consumer_name` | Consumer Full Name | All 5 docs |
+| `consumer_name` | Consumer Full Name | All seven documents |
 | `consumer_number` | MSEDCL Consumer Number (12 digits) | Commissioning, Annexure 3, Annex 2 |
 | `mobile_number` | Contact Mobile Number | Commissioning Report |
 | `email` | Contact Email Address | Commissioning Report |
@@ -178,7 +181,7 @@ Follow these steps to deploy this Flask application on a cPanel-hosted domain or
 Upload only the necessary production files to your subdomain root directory (e.g., `/home/sspowertech/autodocumentation.sspowertech.com/`). Do **not** upload `node_modules`, python local environments, or zip backups.
 
 **Files to upload:**
-*   `app.py` (Flask main application)
+*   `app.py`, `sanction_letter.py`, and `document_defaults.py` (Flask application and its local modules)
 *   `passenger_wsgi.py` (cPanel WSGI loader)
 *   `requirements.txt` (Dependencies list)
 *   `templates/` (Your Word `.docx` templates)
@@ -203,7 +206,7 @@ Upload only the necessary production files to your subdomain root directory (e.g
 1. Scroll down to the **"Configuration files"** section of your Python App page in cPanel.
 2. Add `requirements.txt` to the textbox and click **Add** (if it isn't automatically showing).
 3. Click **"Run pip install"** and select `requirements.txt`.
-   * *This installs Flask and docxtpl in the virtual environment.*
+   * *This installs Flask, docxtpl, and pypdf in the virtual environment.*
 4. Click **Restart** at the top of the Setup page.
 
 ---
