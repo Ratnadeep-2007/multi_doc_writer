@@ -38,7 +38,7 @@ TEMPLATES = [
 # the input JSON, we fail LOUDLY instead of silently leaving "{{ field }}"
 # in the final Word document.
 REQUIRED_FIELDS = [
-    "consumer_name", "consumer_number", "mobile_number", "email",
+    "consumer_name", "consumer_number", "mobile_number",
     "install_address", "consumer_residential_address",
     "sanctioned_capacity_kw", "rooftop_capacity_kw", "module_make",
     "inverter_capacity_kw", "inverter_make", "pv_module_count", "module_capacity_watt",

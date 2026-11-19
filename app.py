@@ -15,7 +15,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from flask import Flask, jsonify, request, render_template_string, send_file
+from flask import Flask, abort, jsonify, request, render_template_string, send_file, url_for
 from docxtpl import DocxTemplate
 from werkzeug.exceptions import RequestEntityTooLarge
 
@@ -55,6 +55,19 @@ TEMPLATES = [
     "Sticker_TEMPLATE.docx",
 ]
 
+DOCUMENT_TITLES = {
+    "Commissioning_Report_TEMPLATE.docx": "Commissioning Report",
+    "Proforma_A_TEMPLATE.docx": "Proforma A",
+    "Guarantee_Certificate_TEMPLATE.docx": "Guarantee Certificate",
+    "Annexure3_TEMPLATE.docx": "Annexure 3 Agreement",
+    "Annex2_TEMPLATE.docx": "Annex 2 Vendor Agreement",
+    "WorkCompletionReport_TEMPLATE.docx": "Work Completion Report",
+    "MeterTestingLetter_TEMPLATE.docx": "Meter Testing Letter",
+    "Sticker_TEMPLATE.docx": "Project Sticker",
+}
+
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
 
 def dedupe_docx_bytes(data: bytes) -> bytes:
     """Fix a docxtpl quirk (seen with MeterTestingLetter_TEMPLATE.docx,
@@ -73,6 +86,18 @@ def dedupe_docx_bytes(data: bytes) -> bytes:
             zout.writestr(last[item.filename], src.read(last[item.filename]))
     return out_buf.getvalue()
 
+
+def render_document(template_name, data):
+    template_path = TEMPLATE_DIR / template_name
+    if not template_path.exists():
+        raise FileNotFoundError(f"Template file not found: {template_path}")
+    document = DocxTemplate(template_path)
+    document.render(data, autoescape=True)
+    buffer = io.BytesIO()
+    document.save(buffer)
+    return dedupe_docx_bytes(buffer.getvalue())
+
+
 # Group fields logically for the UI
 GROUPS = [
     {
@@ -82,7 +107,7 @@ GROUPS = [
             {"label": "Consumer Full Name", "name": "consumer_name", "ph": "SACHIN SAHDEV GAWAND", "required": True},
             {"label": "Consumer Number", "name": "consumer_number", "inputmode": "numeric", "ph": "023130009549", "required": True},
             {"label": "Mobile Number", "name": "mobile_number", "input_type": "tel", "ph": "9260557576", "required": True},
-            {"label": "Email Address", "name": "email", "ph": "solar2ssitindia.com", "required": True},
+            {"label": "Email Address (optional)", "name": "email", "ph": "consumer@example.com", "inputmode": "email", "required": False},
         ]
     },
     {
@@ -854,6 +879,10 @@ FORM_HTML = r"""
     }
   }
 </style>
+<link rel="stylesheet" href="{{ url_for('static', filename='document-preview/preview.css') }}">
+<script src="{{ url_for('static', filename='document-preview/vendor/jszip.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='document-preview/vendor/docx-preview.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='document-preview/preview.js') }}" defer></script>
 </head>
 <body>
 
@@ -1018,7 +1047,10 @@ FORM_HTML = r"""
         </button>
       </div>
     </form>
-    
+
+    <section id="document-preview" class="document-preview" aria-labelledby="document-preview-title"
+             data-documents='{{ preview_documents|tojson }}' hidden></section>
+
     <footer>
       <p>Sanction letters are processed by the app without sending them to an external service.</p>
     </footer>
@@ -1251,6 +1283,8 @@ function updateProgress() {
   if (mobilePct) {
     mobilePct.innerText = `${pct}%`;
   }
+
+  document.getElementById("docs-form").dispatchEvent(new Event("document-values-changed"));
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1374,8 +1408,14 @@ def decimal_text(value):
 
 
 def render_form(values=None, errors=None, status=200):
+    preview_documents = [
+        {"title": DOCUMENT_TITLES[template], "url": url_for("preview_document", index=index),
+         "sticker": template == "Sticker_TEMPLATE.docx"}
+        for index, template in enumerate(TEMPLATES)
+    ]
     return render_template_string(
-        FORM_HTML, groups=GROUPS, values=values or {}, errors=errors or {}
+        FORM_HTML, groups=GROUPS, values=values or {}, errors=errors or {},
+        preview_documents=preview_documents,
     ), status
 
 
@@ -1423,10 +1463,7 @@ def import_sanction_letter():
     return jsonify(fields=fields)
 
 
-@app.route("/generate", methods=["POST"])
-def generate():
-    values = {name: value.strip() for name, value in request.form.items()}
-    consumer_name = values.get("consumer_name", "")
+def prepare_document_data(values):
     data = {}
     errors = {}
     numbers = {}
@@ -1481,19 +1518,53 @@ def generate():
                     if allowed:
                         values[f"{name}_unit"] = unit
 
-    if errors:
-        return render_form(values, errors, 400)
-
     for name in ("sanctioned_capacity_kw", "rooftop_capacity_kw", "inverter_capacity_kw"):
-        capacity = numbers[name] / 1000 if units[name] == "W" else numbers[name]
-        data[name] = decimal_text(capacity)
-    data["module_wattage"] = f"{decimal_text(numbers['module_wattage'])} {units['module_wattage']}"
-    data["module_capacity_watt"] = decimal_text(numbers["pv_module_count"] * numbers["module_wattage"])
+        if name in numbers:
+            capacity = numbers[name] / 1000 if units[name] == "W" else numbers[name]
+            data[name] = decimal_text(capacity)
+    if "module_wattage" in numbers:
+        data["module_wattage"] = f"{decimal_text(numbers['module_wattage'])} {units['module_wattage']}"
+    if "pv_module_count" in numbers and "module_wattage" in numbers:
+        data["module_capacity_watt"] = decimal_text(numbers["pv_module_count"] * numbers["module_wattage"])
+
     try:
         data.update(sticker_context(data))
     except ValueError as error:
-        return render_form(values, {"sticker_sanction_reference": str(error)}, 400)
-    data["sanction_number"] = f"{data['sanction_number'] or ' -'} Date:{data['sanction_date']}"
+        errors["sticker_sanction_reference"] = str(error)
+    if data["sanction_date"]:
+        data["sanction_number"] = f"{data['sanction_number'] or ' -'} Date:{data['sanction_date']}"
+    return data, errors
+
+
+@app.post("/document-preview/<int:index>")
+def preview_document(index):
+    if index >= len(TEMPLATES):
+        abort(404)
+    values = {name: value.strip() for name, value in request.form.items()}
+    data, _ = prepare_document_data(values)
+    template_name = TEMPLATES[index]
+    try:
+        document = render_document(template_name, data)
+    except Exception:
+        logger.exception("Failed to render preview for %s", template_name)
+        return jsonify(error="The Word template preview could not be loaded."), 500
+
+    response = send_file(
+        io.BytesIO(document),
+        mimetype=DOCX_MIME,
+        download_name=template_name.replace("_TEMPLATE", ""),
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.route("/generate", methods=["POST"])
+def generate():
+    values = {name: value.strip() for name, value in request.form.items()}
+    consumer_name = values.get("consumer_name", "")
+    data, errors = prepare_document_data(values)
+    if errors:
+        return render_form(values, errors, 400)
 
     try:
         folder = safe_folder_name(data["consumer_name"]) or "documents"
@@ -1501,16 +1572,8 @@ def generate():
         with zipfile.ZipFile(mem_zip, "w", zipfile.ZIP_DEFLATED) as zf:
             for template_name in TEMPLATES:
                 logger.info("Processing template: %s", template_name)
-                template_path = TEMPLATE_DIR / template_name
-                if not template_path.exists():
-                    raise FileNotFoundError(f"Template file not found: {template_path}")
-                doc = DocxTemplate(template_path)
-                doc.render(data, autoescape=True)
-                buf = io.BytesIO()
-                doc.save(buf)
-                fixed_bytes = dedupe_docx_bytes(buf.getvalue())
                 out_name = template_name.replace("_TEMPLATE", "")
-                zf.writestr(f"{folder}/{out_name}", fixed_bytes)
+                zf.writestr(f"{folder}/{out_name}", render_document(template_name, data))
 
         logger.info("Successfully generated documents ZIP archive for '%s' (%d files)", consumer_name, len(TEMPLATES))
         mem_zip.seek(0)

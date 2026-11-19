@@ -111,6 +111,7 @@ You can use either the Web Application (recommended for everyday use) or the CLI
 4. To autofill from a sanction letter, choose a single original PDF up to 5 MB and select **Fill from PDF**. Review the imported details and fill in the remaining fields.
 5. Review the **Project Sticker** section. Name, address, and consumer number are shared with the main form. The agency defaults are editable.
 6. Select **Generate & Download ZIP** to retrieve all eight documents, including Sticker.docx.
+7. At the end of the form, **Live document preview** opens each filled Word template in the browser. Page breaks and floating graphics can appear slightly differently in Microsoft Word.
 
 > [!TIP]
 > **Network Sharing**: To access the form from a mobile phone or another device on the same local network, run the server with:
@@ -137,7 +138,7 @@ The following schema is the single source of truth used across the templates:
 | `consumer_name` | Consumer Full Name | All eight documents |
 | `consumer_number` | MSEDCL Consumer Number (12 digits) | Commissioning, Annexure 3, Annex 2 |
 | `mobile_number` | Contact Mobile Number | Commissioning Report |
-| `email` | Contact Email Address | Commissioning Report |
+| `email` | Contact Email Address (optional) | Commissioning Report |
 | `install_address` | Address of solar installation | Commissioning, Proforma A, Annexure 3, Annex 2 |
 | `consumer_residential_address` | Consumer signature block address | Annex 2 only |
 | `consumer_residential_address_suffix` | Consumer address district suffix (default provided) | Annex 2 only |
@@ -188,6 +189,7 @@ Upload only the necessary production files to your subdomain root directory (e.g
 *   `passenger_wsgi.py` (cPanel WSGI loader)
 *   `requirements.txt` (Dependencies list)
 *   `templates/` (Your Word `.docx` templates)
+*   `static/` (Live document preview assets)
 *   `doc/` and `originals/` (Optional reference files)
 
 ---
