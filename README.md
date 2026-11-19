@@ -1,6 +1,6 @@
 # Solar Docs Auto-Fill (Multi-Doc Writer)
 
-A stateless offline document automation tool designed to eliminate repetitive data entry for residential solar installations. By inputting a single shared dataset (consumer name, capacity, dates, inverter specifications, vendor credentials, MSEDCL subdivision, etc.), the tool dynamically renders **seven Word documents** required for net-metering and commissioning in Maharashtra (MSEDCL).
+A stateless offline document automation tool designed to eliminate repetitive data entry for residential solar installations. By inputting a single shared dataset (consumer name, capacity, dates, inverter specifications, vendor credentials, MSEDCL subdivision, etc.), the tool dynamically renders **eight Word documents** for solar projects in Maharashtra, including an editable project sticker.
 
 ---
 
@@ -9,8 +9,8 @@ A stateless offline document automation tool designed to eliminate repetitive da
 ```mermaid
 graph TD
     Input[Single Data Source<br/>JSON File or Web Form] --> Engine[docxtpl Python Engine]
-    Templates[7 Word Templates<br/>with Jinja Placeholders] --> Engine
-    Engine --> Output[7 Generated Word Documents]
+    Templates[8 Word Templates<br/>with Jinja Placeholders] --> Engine
+    Engine --> Output[8 Generated Word Documents]
     
     subgraph "Generated Documents"
         Doc1[Commissioning Report]
@@ -20,6 +20,7 @@ graph TD
         Doc5[Consumer Vendor Agreement - Annex 2]
         Doc6[Work Completion Report]
         Doc7[Meter Testing Letter]
+        Doc8[Project Sticker]
     end
     
     Output --> Doc1
@@ -29,13 +30,14 @@ graph TD
     Output --> Doc5
     Output --> Doc6
     Output --> Doc7
+    Output --> Doc8
 ```
 
 ---
 
 ## 🌟 Key Features
 
-* **Shared form**. Enter the installation details once and generate all seven documents.
+* **Shared form**. Enter the installation details once and generate all eight documents.
 * **PDF autofill**. Import an original MSEDCL rooftop sanction letter with selectable text. Review the imported fields before generating.
 * **Premium Glassmorphic Web App**: Includes a local Flask-based web interface with logical grouping, responsiveness, and a quick-load button for sample data.
 * **CLI Power-User Script**: Automate generation using a standard JSON file—ideal for batch processing.
@@ -107,7 +109,8 @@ You can use either the Web Application (recommended for everyday use) or the CLI
    ```
 3. **UX Tip**: Click the **"⚡ Load Sachin Gawand Sample"** button at the top to instantly populate the form with a complete working dataset.
 4. To autofill from a sanction letter, choose a single original PDF up to 5 MB and select **Fill from PDF**. Review the imported details and fill in the remaining fields.
-5. Select **Generate & Download ZIP** to retrieve all seven documents.
+5. Review the **Project Sticker** section. Name, address, and consumer number are shared with the main form. The agency defaults are editable.
+6. Select **Generate & Download ZIP** to retrieve all eight documents, including Sticker.docx.
 
 > [!TIP]
 > **Network Sharing**: To access the form from a mobile phone or another device on the same local network, run the server with:
@@ -131,7 +134,7 @@ The following schema is the single source of truth used across the templates:
 
 | Field Name | Description | Used In |
 | :--- | :--- | :--- |
-| `consumer_name` | Consumer Full Name | All seven documents |
+| `consumer_name` | Consumer Full Name | All eight documents |
 | `consumer_number` | MSEDCL Consumer Number (12 digits) | Commissioning, Annexure 3, Annex 2 |
 | `mobile_number` | Contact Mobile Number | Commissioning Report |
 | `email` | Contact Email Address | Commissioning Report |
@@ -181,7 +184,7 @@ Follow these steps to deploy this Flask application on a cPanel-hosted domain or
 Upload only the necessary production files to your subdomain root directory (e.g., `/home/sspowertech/autodocumentation.sspowertech.com/`). Do **not** upload `node_modules`, python local environments, or zip backups.
 
 **Files to upload:**
-*   `app.py`, `sanction_letter.py`, and `document_defaults.py` (Flask application and its local modules)
+*   `app.py`, `sanction_letter.py`, `document_defaults.py`, and `sticker.py` (Flask application and its local modules)
 *   `passenger_wsgi.py` (cPanel WSGI loader)
 *   `requirements.txt` (Dependencies list)
 *   `templates/` (Your Word `.docx` templates)

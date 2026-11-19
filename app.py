@@ -21,6 +21,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 from document_defaults import VENDOR_AND_METER_DEFAULTS
 from sanction_letter import SanctionLetterError, extract_sanction_letter
+from sticker import STICKER_DEFAULTS, sticker_context
 
 # Configure logging to write to app.log in the same directory
 LOG_FILE = Path(__file__).parent / "app.log"
@@ -51,6 +52,7 @@ TEMPLATES = [
     "Annex2_TEMPLATE.docx",
     "WorkCompletionReport_TEMPLATE.docx",
     "MeterTestingLetter_TEMPLATE.docx",
+    "Sticker_TEMPLATE.docx",
 ]
 
 
@@ -137,6 +139,22 @@ GROUPS = [
         "fields": [
             {"label": "MSEDCL Officer Designation", "name": "officer_designation", "ph": "Deputy Executive Engineer Alibag II", "required": False, "default": "Deputy Executive Engineer Alibag II", "full_width": True},
             {"label": "Subdivision Registered Office Address", "name": "subdivision_address", "ph": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201", "required": False, "default": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201", "full_width": True},
+        ]
+    },
+    {
+        "title": "Project Sticker",
+        "icon": "tag",
+        "fields": [
+            {"label": "Name", "name": "sticker_consumer_name", "shared_from": "consumer_name"},
+            {"label": "Consumer No", "name": "sticker_consumer_number", "shared_from": "consumer_number", "inputmode": "numeric"},
+            {"label": "Address", "name": "sticker_install_address", "shared_from": "install_address", "full_width": True},
+            {"label": "Sticker Sanction Reference (optional)", "name": "sticker_sanction_reference",
+             "hint": "Uses the sanction number and date if left blank.", "required": False, "full_width": True},
+            {"label": "Scheme", "name": "sticker_scheme", "default": STICKER_DEFAULTS["sticker_scheme"], "required": False},
+            {"label": "Agency Name", "name": "sticker_agency_name",
+             "default": STICKER_DEFAULTS["sticker_agency_name"], "required": False},
+            {"label": "Agency Contact", "name": "sticker_agency_contact", "input_type": "tel",
+             "default": STICKER_DEFAULTS["sticker_agency_contact"], "required": False},
         ]
     },
     {
@@ -908,7 +926,7 @@ FORM_HTML = r"""
   <main class="main-content">
     <header class="app-header">
       <h1>Solar Docs Auto-Fill</h1>
-      <p class="subtitle">Fill the form once to generate all 7 solar installation documents</p>
+      <p class="subtitle">Fill the form once to generate the solar installation documents and project sticker</p>
     </header>
     
     <section class="card full-width-section" aria-labelledby="import-title">
@@ -940,7 +958,7 @@ FORM_HTML = r"""
       {% for group in groups %}
         <div class="card {% if group.title in ['Solar System Specs', 'Address Information', 'MSEDCL Subdivision (Optional)'] %}full-width-section{% endif %}" id="card-section-{{ loop.index0 }}">
           <h2 class="card-title"><i data-lucide="{{ group.icon }}"></i> {{ group.title }}</h2>
-          <div class="grid-fields {% if group.title in ['Consumer General Info', 'Solar System Specs', 'Execution & Agreement Dates'] %}grid-2{% endif %}">
+          <div class="grid-fields {% if group.title in ['Consumer General Info', 'Solar System Specs', 'Execution & Agreement Dates', 'Project Sticker'] %}grid-2{% endif %}">
             {% for field in group.fields %}
               <div class="field-wrapper {% if field.full_width %}span-2{% endif %}">
                 <label for="{{ field.name }}">
@@ -952,8 +970,9 @@ FORM_HTML = r"""
                 <input
                   type="{{ 'date' if field.date_format else 'number' if field.step else field.input_type|default('text') }}"
                   id="{{ field.name }}"
-                  name="{{ field.name }}"
-                  value="{{ values.get(field.name, field.default|default('')) }}"
+                  {% if field.shared_from %}data-shared-from="{{ field.shared_from }}"
+                  {% else %}name="{{ field.name }}"{% endif %}
+                  value="{{ values.get(field.shared_from or field.name, field.default|default('')) }}"
                   {% if field.default %}data-default="{{ field.default }}"{% endif %}
                   aria-describedby="hint-{{ field.name }}{% if field.name in errors %} error-{{ field.name }}{% endif %}"
                   {% if field.name in errors %}aria-invalid="true"{% endif %}
@@ -961,7 +980,7 @@ FORM_HTML = r"""
                   {% if field.inputmode %}inputmode="{{ field.inputmode }}"{% endif %}
                   {% if field.step %}min="{{ 1 if field.step == '1' else 0 }}" step="{{ field.step }}"{% endif %}
                   {% if field.required %}required{% endif %}
-                  {% if field.calculated %}readonly{% endif %}
+                  {% if field.calculated or field.shared_from %}readonly{% endif %}
                 >
                 {% if field.date_format %}
                   <button class="date-picker-button" type="button" data-calendar-for="{{ field.name }}"
@@ -980,7 +999,9 @@ FORM_HTML = r"""
                 <span class="hint-text" id="hint-{{ field.name }}">
                   {% if field.date_format %}Select a date from the calendar.
                   {% elif field.calculated %}Panel count multiplied by wattage per panel
-                  {% else %}e.g. {{ field.ph }}{% endif %}
+                  {% elif field.hint %}{{ field.hint }}
+                  {% elif field.ph %}e.g. {{ field.ph }}
+                  {% endif %}
                 </span>
                 {% if field.name in errors %}
                   <span class="field-error" id="error-{{ field.name }}">{{ errors[field.name] }}</span>
@@ -1018,13 +1039,13 @@ const sampleData = {
   "consumer_name": "SACHIN SAHDEV GAWAND",
   "consumer_number": "023130009549",
   "mobile_number": "9260557576",
-  "email": "solar2ssitindia.com",
+  "email": "consumer@example.com",
   "install_address": "H. NO. 1098, TAL. ALIBAG PEN CIRCLE,",
   "consumer_residential_address": "At Post Dhokawade",
   "consumer_residential_address_suffix": "TAL. ALIBAG, DIST. RAIGAD",
-  "sanctioned_capacity_kw": "3.3",
+  "sanctioned_capacity_kw": "5.0",
   "sanctioned_capacity_kw_unit": "kW",
-  "rooftop_capacity_kw": "3",
+  "rooftop_capacity_kw": "3.3",
   "rooftop_capacity_kw_unit": "kW",
   "module_make": "Waaree India pvt ltd",
   "inverter_capacity_kw": "3.3",
@@ -1032,17 +1053,17 @@ const sampleData = {
   "inverter_make": "Polycab Solar Pvt. Ltd",
   "pv_module_count": "6",
   "module_capacity_watt": "3300",
-  "installation_date": "2026-06-04",
-  "agreement_date": "2026-06-22",
-  "execution_date_text": "2026-06-22",
+  "installation_date": "2026-07-04",
+  "agreement_date": "2026-07-02",
+  "execution_date_text": "2026-07-02",
   "vendor_name": "S S Powertech",
   "vendor_name_full": "M/S S S PowerTech",
   "vendor_address": "Ranjanpada, Post Awas, Tal. Alibag, District. Raigad 402201",
   "vendor_address_suffix": "Tal: Alibag,  DIST. RAIGAD, 402201.",
   "officer_designation": "Deputy Executive Engineer Alibag II",
   "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201",
-  "sanction_number": "4138/ALIBAG-II/75755227",
-  "sanction_date": "2026-07-17",
+  "sanction_number": "4138/ALIBAG-II/82249519",
+  "sanction_date": "2026-06-25",
   "capacity_kw_compact": "3.3KW",
   "almm_model_number": "AE14HXXXVHC10B",
   "module_wattage": "550",
@@ -1051,6 +1072,11 @@ const sampleData = {
   "inverter_model": "Vs-502s",
   "mppt_count": "1",
   "inverter_manufacture_year": "2025",
+  "generation_meter_make": "Schneider electric India pvt ltd",
+  "sticker_sanction_reference": "4138/ALIBAG-II/Rooftop RE/023130009549/82249519/25-Jun-2026",
+  "sticker_scheme": "PM- Surya Ghar",
+  "sticker_agency_name": "S. S. PowerTech",
+  "sticker_agency_contact": "9673768750",
   "meter_serial_number": "U6541057"
 };
 
@@ -1177,6 +1203,12 @@ function scrollToSection(id) {
 
 // Progress and Status calculation
 function updateProgress() {
+  document.querySelectorAll("[data-shared-from]").forEach(field => {
+    const source = document.getElementById(field.dataset.sharedFrom);
+    if (field.value !== source.value) {
+      field.value = source.value;
+    }
+  });
   const groups = {{ groups|tojson }};
   let totalRequired = 0;
   let filledRequired = 0;
@@ -1244,6 +1276,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (wattInput) wattInput.addEventListener("input", autoCalcModuleCapacity);
   
   autoCalcModuleCapacity();
+
+  document.querySelectorAll("[data-shared-from]").forEach(field => {
+    const source = document.getElementById(field.dataset.sharedFrom);
+    field.readOnly = false;
+    const syncToSource = () => { source.value = field.value; };
+    field.addEventListener("input", syncToSource);
+    field.addEventListener("change", syncToSource);
+  });
 
   // Track input to update progress
   const inputs = document.querySelectorAll('input, select');
@@ -1401,6 +1441,8 @@ def generate():
 
     for group in GROUPS:
         for field in group["fields"]:
+            if field.get("shared_from"):
+                continue
             name = field["name"]
             label = field["label"]
             value = values.get(name, "") or field.get("default", "")
@@ -1447,6 +1489,10 @@ def generate():
         data[name] = decimal_text(capacity)
     data["module_wattage"] = f"{decimal_text(numbers['module_wattage'])} {units['module_wattage']}"
     data["module_capacity_watt"] = decimal_text(numbers["pv_module_count"] * numbers["module_wattage"])
+    try:
+        data.update(sticker_context(data))
+    except ValueError as error:
+        return render_form(values, {"sticker_sanction_reference": str(error)}, 400)
     data["sanction_number"] = f"{data['sanction_number'] or ' -'} Date:{data['sanction_date']}"
 
     try:

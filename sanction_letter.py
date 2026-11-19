@@ -6,6 +6,8 @@ from datetime import datetime
 from pypdf import PdfReader
 from pypdf.errors import PyPdfError
 
+from sticker import PORTAL_SANCTION_REFERENCE, STICKER_DEFAULTS
+
 
 class SanctionLetterError(ValueError):
     """The upload could not be imported as a sanction letter."""
@@ -101,5 +103,25 @@ def extract_sanction_fields(text):
     if load and float(load[1]) > 0:
         fields["sanctioned_capacity_kw"] = load[1]
         fields["sanctioned_capacity_kw_unit"] = "kW"
+
+    if "sanction_number" in fields:
+        for line in text[subject.end():].splitlines():
+            label = re.match(r"Sanction No *: *(.*)$", line, flags)
+            if not label:
+                continue
+            reference = PORTAL_SANCTION_REFERENCE.fullmatch(label[1])
+            if (reference and reference["consumer"] == fields["consumer_number"]
+                    and f"{reference['office']}/{reference['application']}".casefold() == sanction[1].casefold()
+                    and reference["date"].casefold() == sanction[2].casefold()):
+                fields["sticker_sanction_reference"] = label[1]
+                break
+
+    scheme = re.search(r"^Scheme Name *: *(.*?)(?: +Agency Name *:|$)", text[subject.end():], flags)
+    if scheme:
+        name = re.sub(r"^Applied At +", "", scheme[1], flags=re.IGNORECASE).strip()
+        if name:
+            if re.sub(r"[^a-z]", "", name.lower()).startswith("pmsuryaghar"):
+                name = STICKER_DEFAULTS["sticker_scheme"]
+            fields["sticker_scheme"] = name
 
     return fields

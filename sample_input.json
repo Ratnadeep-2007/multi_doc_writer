@@ -2,22 +2,22 @@
   "consumer_name": "SACHIN SAHDEV GAWAND",
   "consumer_number": "023130009549",
   "mobile_number": "9260557576",
-  "email": "solar2ssitindia.com",
+  "email": "consumer@example.com",
   "install_address": "H. NO. 1098, TAL. ALIBAG PEN CIRCLE,",
   "consumer_residential_address": "At Post Dhokawade",
   "consumer_residential_address_suffix": "TAL. ALIBAG, DIST. RAIGAD",
 
-  "sanctioned_capacity_kw": "3.3",
-  "rooftop_capacity_kw": "3",
+  "sanctioned_capacity_kw": "5.0",
+  "rooftop_capacity_kw": "3.3",
   "module_make": "Waaree India pvt ltd",
   "inverter_capacity_kw": "3.3",
   "inverter_make": "Polycab Solar Pvt. Ltd",
   "pv_module_count": "6",
   "module_capacity_watt": "3300",
 
-  "installation_date": "4-June-2026",
-  "agreement_date": "22/06/2026",
-  "execution_date_text": "22nd of June 2026",
+  "installation_date": "4-July-2026",
+  "agreement_date": "02/07/2026",
+  "execution_date_text": "2nd of July 2026",
 
   "vendor_name": "S S Powertech",
   "vendor_name_full": "M/S S S PowerTech",
@@ -27,7 +27,7 @@
   "officer_designation": "Deputy Executive Engineer Alibag II",
   "subdivision_address": "CHENDHARE, TAL-ALIBAG, DIST-RAIGAD, ALIBAG II Sub-division, ALIBAG - RAIGAD, PINCODE-402201",
 
-  "sanction_number": "4138/ALIBAG-II/75755227 Date:17-Jul-2026",
+  "sanction_number": "4138/ALIBAG-II/82249519 Date:25-Jun-2026",
   "capacity_kw_compact": "3.3KW",
   "almm_model_number": "AE14HXXXVHC10B",
   "module_wattage": "550",
@@ -35,5 +35,10 @@
   "inverter_model": "Vs-502s",
   "mppt_count": "1",
   "inverter_manufacture_year": "2025",
+  "generation_meter_make": "Schneider electric India pvt ltd",
+  "sticker_sanction_reference": "4138/ALIBAG-II/Rooftop RE/023130009549/82249519/25-Jun-2026",
+  "sticker_scheme": "PM- Surya Ghar",
+  "sticker_agency_name": "S. S. PowerTech",
+  "sticker_agency_contact": "9673768750",
   "meter_serial_number": "U6541057"
 }

@@ -19,6 +19,7 @@ from pathlib import Path
 from docxtpl import DocxTemplate
 
 from document_defaults import VENDOR_AND_METER_DEFAULTS
+from sticker import sticker_context
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
@@ -30,6 +31,7 @@ TEMPLATES = [
     "Annex2_TEMPLATE.docx",
     "WorkCompletionReport_TEMPLATE.docx",
     "MeterTestingLetter_TEMPLATE.docx",
+    "Sticker_TEMPLATE.docx",
 ]
 
 # Every field used by at least one template. If a field is missing from
@@ -127,6 +129,10 @@ def load_input(path: str) -> dict:
             print(f"  - {k}: {data[k]}")
         print()
 
+    try:
+        data.update(sticker_context(data))
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     return data
 
 
